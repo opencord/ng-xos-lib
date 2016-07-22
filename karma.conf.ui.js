@@ -77,19 +77,7 @@
       // test results reporter to use
       // possible values: 'dots', 'progress'
       // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-      reporters: ['dots', 'junit', 'coverage'],
-
-      junitReporter: {
-        outputDir: 'test-result',
-        useBrowserName: false,
-        outputFile: 'test-results.xml'
-      },
-
-      coverageReporter: {
-        type: 'cobertura',
-        subdir: '.',
-        dir: 'test-result/'
-      },
+      reporters: ['dots'],
 
       // web server port
       port: 9876,
