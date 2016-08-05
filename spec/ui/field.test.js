@@ -277,6 +277,8 @@
         let input;
         describe('given a a text field', () => {
           beforeEach(() => {
+            scope = rootScope.$new();
+            scope.name='label';
             scope.field = {
               label: 'Label',
               type: 'text',
@@ -287,6 +289,7 @@
               }
             };
 
+            compileElement();
             scope.$digest();
             input = $(element).find('input');
           });

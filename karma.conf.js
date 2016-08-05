@@ -7,7 +7,7 @@
   /* eslint indent: [2,2], quotes: [2, "single"]*/
 
   // this is to load a different suite of test while developing
-  const testFiles = '*';
+  let testFiles = '*';
   if(process.argv[4]){
     testFiles = process.argv[4];
   }

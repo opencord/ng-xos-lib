@@ -14,7 +14,7 @@
     "lint:src": "eslint src/",
     "lint:spec": "eslint spec/",
     "lint": "npm run lint:src && npm run lint:spec",
-    "postinstall": "cd node_modules/gulp-ngdocs/; npm install"
+    "postinstall": "cd node_modules/gulp-ngdocs/ && npm install"
   },
   "author": "Open Networking Laboratory",
   "license": "Apache 2.0",
