@@ -13,12 +13,13 @@
     "dev": "gulp serveDevEnv",
     "lint:src": "eslint src/",
     "lint:spec": "eslint spec/",
-    "lint": "npm run lint:src && npm run lint:spec",
-    "postinstall": "cd node_modules/gulp-ngdocs/ && npm install"
+    "lint": "npm run lint:src && npm run lint:spec"
   },
   "author": "Open Networking Laboratory",
   "license": "Apache 2.0",
   "dependencies": {
+    "angular": "^1.5.8",
+    "angular-animate": "^1.5.8",
     "bluebird": "^3.0.5",
     "chalk": "^1.1.1",
     "concat": "^2.0.0",

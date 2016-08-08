@@ -17,7 +17,7 @@ module.exports = function(options){
       scripts: [].concat([
         `./${options.ngXosVendor}ngXosVendor.min.js`,
         `./${options.ngXosVendor}ngXosHelpers.min.js`,
-        'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-mocks.js',
+        '../bower_components/angular-mocks/angular-mocks.js'
       ]),
       styles: [
         `./${options.ngXosStyles}xosNgLib.css`,
@@ -52,6 +52,9 @@ module.exports = function(options){
     browserSync.init({
       server: {
         baseDir: './docs',
+        routes: {
+          '/bower_components': 'bower_components'
+        }
       }
     });
   });
