@@ -78,10 +78,9 @@
     </example>
     */
    
-  .directive('xosSmartTable', function(){
-    return {
+  .component('xosSmartTable', {
       restrict: 'E',
-      scope: {
+      bindings: {
         config: '='
       },
       template: `
@@ -121,7 +120,7 @@
       bindToController: true,
       controllerAs: 'vm',
       controller: function($injector, LabelFormatter, _, XosFormHelpers){
-        
+
         // TODO
         // - Validate the config (what if resource does not exist?)
 
@@ -264,6 +263,5 @@
 
         getData();
       }
-    };
   });
 })();

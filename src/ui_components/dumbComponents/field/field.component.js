@@ -142,98 +142,96 @@
         </file>
       </example>
     */
-  .directive('xosField', function(RecursionHelper){
-    return {
-      restrict: 'E',
-      scope: {
-        name: '=',
-        field: '=',
-        ngModel: '='
-      },
-      template: `
-        <label ng-if="vm.field.type !== 'object'">{{vm.field.label}}</label>
-            <input
-              xos-custom-validator custom-validator="vm.field.validators.custom || null"
-              ng-if="vm.field.type !== 'boolean' && vm.field.type !== 'object' && vm.field.type !== 'select'"
-              type="{{vm.field.type}}"
-              name="{{vm.name}}"
-              class="form-control"
+  .component('xosField', {
+    restrict: 'E',
+    bindings: {
+      name: '=',
+      field: '=',
+      ngModel: '='
+    },
+    template: `
+      <label ng-if="vm.field.type !== 'object'">{{vm.field.label}}</label>
+          <input
+            xos-custom-validator custom-validator="vm.field.validators.custom || null"
+            ng-if="vm.field.type !== 'boolean' && vm.field.type !== 'object' && vm.field.type !== 'select'"
+            type="{{vm.field.type}}"
+            name="{{vm.name}}"
+            class="form-control"
+            ng-model="vm.ngModel"
+            ng-minlength="vm.field.validators.minlength || 0"
+            ng-maxlength="vm.field.validators.maxlength || 2000"
+            ng-required="vm.field.validators.required || false" />
+            <select class="form-control" ng-if ="vm.field.type === 'select'"
+              name = "{{vm.name}}"
+              ng-options="item.id as item.label for item in vm.field.options"
               ng-model="vm.ngModel"
-              ng-minlength="vm.field.validators.minlength || 0"
-              ng-maxlength="vm.field.validators.maxlength || 2000"
-              ng-required="vm.field.validators.required || false" />
-              <select class="form-control" ng-if ="vm.field.type === 'select'"
-                name = "{{vm.name}}"
-                ng-options="item.id as item.label for item in vm.field.options"
-                ng-model="vm.ngModel"
-                ng-required="vm.field.validators.required || false">
-                </select>
-            <span class="boolean-field" ng-if="vm.field.type === 'boolean'">
-              <a href="#"
-                class="btn btn-success"
-                ng-show="vm.ngModel"
-                ng-click="vm.ngModel = false">
-                <i class="glyphicon glyphicon-ok"></i>
-              </a>
-              <a href="#"
-                class="btn btn-danger"
-                ng-show="!vm.ngModel"
-                ng-click="vm.ngModel = true">
-                <i class="glyphicon glyphicon-remove"></i>
-              </a>
-            </span>
-            <div
-              class="panel panel-default object-field"
-              ng-if="vm.field.type == 'object' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"
-              >
-              <div class="panel-heading">{{vm.field.label}}</div>
-              <div class="panel-body">
-                <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">
-                  <xos-field
-                    name="k"
-                    field="{label: vm.formatLabel(k), type: vm.getType(v)}"
-                    ng-model="v">
-                  </xos-field>
-                </div>
-                <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">
-                  <xos-field
-                    name="k"
-                    field="{
-                      label: v.label || vm.formatLabel(k),
-                      type: v.type,
-                      validators: v.validators
-                    }"
-                    ng-model="vm.ngModel[k]">
-                  </xos-field>
-                </div>
+              ng-required="vm.field.validators.required || false">
+              </select>
+          <span class="boolean-field" ng-if="vm.field.type === 'boolean'">
+            <a href="#"
+              class="btn btn-success"
+              ng-show="vm.ngModel"
+              ng-click="vm.ngModel = false">
+              <i class="glyphicon glyphicon-ok"></i>
+            </a>
+            <a href="#"
+              class="btn btn-danger"
+              ng-show="!vm.ngModel"
+              ng-click="vm.ngModel = true">
+              <i class="glyphicon glyphicon-remove"></i>
+            </a>
+          </span>
+          <div
+            class="panel panel-default object-field"
+            ng-if="vm.field.type == 'object' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"
+            >
+            <div class="panel-heading">{{vm.field.label}}</div>
+            <div class="panel-body">
+              <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">
+                <xos-field
+                  name="k"
+                  field="{label: vm.formatLabel(k), type: vm.getType(v)}"
+                  ng-model="v">
+                </xos-field>
+              </div>
+              <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">
+                <xos-field
+                  name="k"
+                  field="{
+                    label: v.label || vm.formatLabel(k),
+                    type: v.type,
+                    validators: v.validators
+                  }"
+                  ng-model="vm.ngModel[k]">
+                </xos-field>
               </div>
             </div>
-      `,
-      bindToController: true,
-      controllerAs: 'vm',
-      // the compile cicle is needed to support recursion
-      compile: function (element) {
-        return RecursionHelper.compile(element);
-      },
-      controller: function($attrs, XosFormHelpers, LabelFormatter){
+          </div>
+    `,
+    bindToController: true,
+    controllerAs: 'vm',
+    // the compile cicle is needed to support recursion
+    //compile: function (element) {
+    //  return RecursionHelper.compile(element);
+    //},
+    controller: function($attrs, XosFormHelpers, LabelFormatter){
 
-        if(!this.name){
-          throw new Error('[xosField] Please provide a field name');
-        }
-        if(!this.field){
-          throw new Error('[xosField] Please provide a field definition');
-        }
-        if(!this.field.type){
-          throw new Error('[xosField] Please provide a type in the field definition');
-        }
-        if(!$attrs.ngModel){
-          throw new Error('[xosField] Please provide an ng-model');
-        }
-        this.getType = XosFormHelpers._getFieldFormat;
-        this.formatLabel = LabelFormatter.format;
-
-        this.isEmptyObject = o => o ? Object.keys(o).length === 0 : true;
+      if(!this.name){
+        throw new Error('[xosField] Please provide a field name');
       }
+      if(!this.field){
+        throw new Error('[xosField] Please provide a field definition');
+      }
+      if(!this.field.type){
+        throw new Error('[xosField] Please provide a type in the field definition');
+      }
+      if(!$attrs.ngModel){
+        throw new Error('[xosField] Please provide an ng-model');
+      }
+      this.getType = XosFormHelpers._getFieldFormat;
+      this.formatLabel = LabelFormatter.format;
+
+      this.isEmptyObject = o => o ? Object.keys(o).length === 0 : true;
     }
   })
 

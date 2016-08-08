@@ -204,82 +204,80 @@
 
   **/
 
-  .directive('xosForm', function(){
-    return {
-      restrict: 'E',
-      scope: {
-        config: '=',
-        ngModel: '='
-      },
-      template: `
-        <form name="vm.{{vm.config.formName || 'form'}}" novalidate>
-          <div class="form-group" ng-repeat="(name, field) in vm.formField">
-            <xos-field name="name" field="field" ng-model="vm.ngModel[name]"></xos-field>
-            <xos-validation field="vm[vm.config.formName || 'form'][name]" form = "vm[vm.config.formName || 'form']"></xos-validation>
-            <div class="alert alert-info" ng-show="(field.hint).length >0" role="alert">{{field.hint}}</div>
-          </div>
-          <div class="form-group" ng-if="vm.config.actions">
-          <xos-alert config="vm.config.feedback" show="vm.config.feedback.show">{{vm.config.feedback.message}}</xos-alert>
+  .component('xosForm', {
+    restrict: 'E',
+    bindings: {
+      config: '=',
+      ngModel: '='
+    },
+    template: `
+      <form name="vm.{{vm.config.formName || 'form'}}" novalidate>
+        <div class="form-group" ng-repeat="(name, field) in vm.formField">
+          <xos-field name="name" field="field" ng-model="vm.ngModel[name]"></xos-field>
+          <xos-validation field="vm[vm.config.formName || 'form'][name]" form = "vm[vm.config.formName || 'form']"></xos-validation>
+          <div class="alert alert-info" ng-show="(field.hint).length >0" role="alert">{{field.hint}}</div>
+        </div>
+        <div class="form-group" ng-if="vm.config.actions">
+        <xos-alert config="vm.config.feedback" show="vm.config.feedback.show">{{vm.config.feedback.message}}</xos-alert>
 
-            <button role="button" href=""
-              ng-repeat="action in vm.config.actions"
-              ng-click="action.cb(vm.ngModel, vm[vm.config.formName || 'form'])"
-              class="btn btn-{{action.class}}"
-              title="{{action.label}}">
-              <i class="glyphicon glyphicon-{{action.icon}}"></i>
-              {{action.label}}
-            </button>
-          </div>
-        </form>
-      `,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: function($scope, $log, _, XosFormHelpers){
+          <button role="button" href=""
+            ng-repeat="action in vm.config.actions"
+            ng-click="action.cb(vm.ngModel, vm[vm.config.formName || 'form'])"
+            class="btn btn-{{action.class}}"
+            title="{{action.label}}">
+            <i class="glyphicon glyphicon-{{action.icon}}"></i>
+            {{action.label}}
+          </button>
+        </div>
+      </form>
+    `,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: function($scope, $log, _, XosFormHelpers){
 
-        if(!this.config){
-          throw new Error('[xosForm] Please provide a configuration via the "config" attribute');
-        }
-
-        if(!this.config.actions){
-          throw new Error('[xosForm] Please provide an action list in the configuration');
-        }
-
-        if(!this.config.feedback){
-          this.config.feedback =  {
-            show: false,
-            message: 'Form submitted successfully !!!',
-            type: 'success'
-          }
-        }
-
-        this.excludedField = ['id', 'validators', 'created', 'updated', 'deleted', 'backend_status'];
-        if(this.config && this.config.exclude){
-          this.excludedField = this.excludedField.concat(this.config.exclude);
-        }
-
-        this.formField = [];
-
-        $scope.$watch(() => this.config, ()=> {
-          if(!this.ngModel){
-            return;
-          }
-          let diff = _.difference(Object.keys(this.ngModel), this.excludedField);
-          let modelField = XosFormHelpers.parseModelField(diff);
-          this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, this.ngModel);
-        }, true);
-
-        $scope.$watch(() => this.ngModel, (model) => {
-          // empty from old stuff
-          this.formField = {};
-          if(!model){
-            return;
-          }
-          let diff = _.difference(Object.keys(model), this.excludedField);
-          let modelField = XosFormHelpers.parseModelField(diff);
-          this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, model);
-        });
-
+      if(!this.config){
+        throw new Error('[xosForm] Please provide a configuration via the "config" attribute');
       }
+
+      if(!this.config.actions){
+        throw new Error('[xosForm] Please provide an action list in the configuration');
+      }
+
+      if(!this.config.feedback){
+        this.config.feedback =  {
+          show: false,
+          message: 'Form submitted successfully !!!',
+          type: 'success'
+        }
+      }
+
+      this.excludedField = ['id', 'validators', 'created', 'updated', 'deleted', 'backend_status'];
+      if(this.config && this.config.exclude){
+        this.excludedField = this.excludedField.concat(this.config.exclude);
+      }
+
+      this.formField = [];
+
+      $scope.$watch(() => this.config, ()=> {
+        if(!this.ngModel){
+          return;
+        }
+        let diff = _.difference(Object.keys(this.ngModel), this.excludedField);
+        let modelField = XosFormHelpers.parseModelField(diff);
+        this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, this.ngModel);
+      }, true);
+
+      $scope.$watch(() => this.ngModel, (model) => {
+        // empty from old stuff
+        this.formField = {};
+        if(!model){
+          return;
+        }
+        let diff = _.difference(Object.keys(model), this.excludedField);
+        let modelField = XosFormHelpers.parseModelField(diff);
+        this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, model);
+      });
+
     }
   });
 })();

@@ -102,43 +102,41 @@
   </example>
   **/
 
-  .directive('xosAlert', function(){
-    return {
-      restrict: 'E',
-      scope: {
-        config: '=',
-        show: '=?'
-      },
-      template: `
-        <div ng-cloak class="alert alert-{{vm.config.type}}" ng-hide="!vm.show">
-          <button type="button" class="close" ng-if="vm.config.closeBtn" ng-click="vm.dismiss()">
-            <span aria-hidden="true">&times;</span>
-          </button>
-          <p ng-transclude></p>
-        </div>
-      `,
-      transclude: true,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: function($timeout){
+  .component('xosAlert', {
+    restrict: 'E',
+    bindings: {
+      config: '=',
+      show: '=?'
+    },
+    template: `
+      <div ng-cloak class="alert alert-{{vm.config.type}}" ng-hide="!vm.show">
+        <button type="button" class="close" ng-if="vm.config.closeBtn" ng-click="vm.dismiss()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <p ng-transclude></p>
+      </div>
+    `,
+    transclude: true,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: function($timeout){
 
-        if(!this.config){
-          throw new Error('[xosAlert] Please provide a configuration via the "config" attribute');
-        }
+      if(!this.config){
+        throw new Error('[xosAlert] Please provide a configuration via the "config" attribute');
+      }
 
-        // default the value to true
-        this.show = this.show !== false;
-        
-        this.dismiss = () => {
-          this.show = false;
-        }
+      // default the value to true
+      this.show = this.show !== false;
 
-        if(this.config.autoHide){
-          let to = $timeout(() => {
-            this.dismiss();
-            $timeout.cancel(to);
-          }, this.config.autoHide);
-        }
+      this.dismiss = () => {
+        this.show = false;
+      }
+
+      if(this.config.autoHide){
+        let to = $timeout(() => {
+          this.dismiss();
+          $timeout.cancel(to);
+        }, this.config.autoHide);
       }
     }
   })

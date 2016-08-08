@@ -172,77 +172,75 @@
       </file>
     </example>
     */
-  .directive('xosSmartPie', function(){
-    return {
-      restrict: 'E',
-      scope: {
-        config: '='
-      },
-      template: `
-        <canvas
-          class="chart chart-pie {{vm.config.classes}}"
-          chart-data="vm.data" chart-labels="vm.labels"
-          chart-legend="{{vm.config.legend}}">
-        </canvas>
-      `,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: function($injector, $interval, $scope, $timeout, _){
+  .component('xosSmartPie', {
+    restrict: 'E',
+    bindings: {
+      config: '='
+    },
+    template: `
+      <canvas
+        class="chart chart-pie {{vm.config.classes}}"
+        chart-data="vm.data" chart-labels="vm.labels"
+        chart-legend="{{vm.config.legend}}">
+      </canvas>
+    `,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: function($injector, $interval, $scope, $timeout, _){
 
-        if(!this.config.resource && !this.config.data){
-          throw new Error('[xosSmartPie] Please provide a resource or an array of data in the configuration');
-        }
-
-        const groupData = (data) => _.groupBy(data, this.config.groupBy);
-        const formatData = (data) => _.reduce(Object.keys(data), (list, group) => list.concat(data[group].length), []);
-        const formatLabels = (data) => angular.isFunction(this.config.labelFormatter) ? this.config.labelFormatter(Object.keys(data)) : Object.keys(data);
-
-        const prepareData = (data) => {
-          // group data
-          let grouped = groupData(data);
-          this.data = formatData(grouped);
-          // create labels
-          this.labels = formatLabels(grouped);
-        }
-
-        if(this.config.resource){
-
-          this.Resource = $injector.get(this.config.resource);
-          const getData = () => {
-            this.Resource.query().$promise
-            .then((res) => {
-
-              if(!res[0]){
-                return;
-              }
-
-              prepareData(res);
-            });
-          }
-
-          getData();
-
-          if(this.config.poll){
-            $interval(() => {getData()}, this.config.poll * 1000)
-          }
-        }
-        else {
-          $scope.$watch(() => this.config.data, (data) => {
-            if(data){
-              prepareData(this.config.data);
-            }
-          }, true);
-        }
-
-        $scope.$on('create', function (event, chart) {
-          console.log(`create: ${chart.id}`);
-        });
-
-        $scope.$on('destroy', function (event, chart) {
-          console.log(`destroy: ${chart.id}`);
-        });
-
+      if(!this.config.resource && !this.config.data){
+        throw new Error('[xosSmartPie] Please provide a resource or an array of data in the configuration');
       }
-    };
+
+      const groupData = (data) => _.groupBy(data, this.config.groupBy);
+      const formatData = (data) => _.reduce(Object.keys(data), (list, group) => list.concat(data[group].length), []);
+      const formatLabels = (data) => angular.isFunction(this.config.labelFormatter) ? this.config.labelFormatter(Object.keys(data)) : Object.keys(data);
+
+      const prepareData = (data) => {
+        // group data
+        let grouped = groupData(data);
+        this.data = formatData(grouped);
+        // create labels
+        this.labels = formatLabels(grouped);
+      }
+
+      if(this.config.resource){
+
+        this.Resource = $injector.get(this.config.resource);
+        const getData = () => {
+          this.Resource.query().$promise
+          .then((res) => {
+
+            if(!res[0]){
+              return;
+            }
+
+            prepareData(res);
+          });
+        }
+
+        getData();
+
+        if(this.config.poll){
+          $interval(() => {getData()}, this.config.poll * 1000)
+        }
+      }
+      else {
+        $scope.$watch(() => this.config.data, (data) => {
+          if(data){
+            prepareData(this.config.data);
+          }
+        }, true);
+      }
+
+      $scope.$on('create', function (event, chart) {
+        console.log(`create: ${chart.id}`);
+      });
+
+      $scope.$on('destroy', function (event, chart) {
+        console.log(`destroy: ${chart.id}`);
+      });
+
+    }
   });
 })();

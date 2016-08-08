@@ -73,39 +73,37 @@
   </example>
     */
 
-  .directive('xosValidation', function(){
-    return {
-      restrict: 'E',
-      scope: {
-        field: '=',
-        form: '='
-      },
-      template: `
-        <div ng-cloak>
-          <xos-alert config="vm.config" show="vm.field.$error.required !== undefined && vm.field.$error.required !== false  && (vm.field.$touched || vm.form.$submitted)">
-            Field required
-          </xos-alert>
-          <xos-alert config="vm.config" show="vm.field.$error.email !== undefined && vm.field.$error.email !== false && (vm.field.$touched || vm.form.$submitted)">
-            This is not a valid email
-          </xos-alert>
-          <xos-alert config="vm.config" show="vm.field.$error.minlength !== undefined && vm.field.$error.minlength !== false && (vm.field.$touched || vm.form.$submitted)">
-            Too short
-          </xos-alert>
-          <xos-alert config="vm.config" show="vm.field.$error.maxlength !== undefined && vm.field.$error.maxlength !== false && (vm.field.$touched || vm.form.$submitted)">
-            Too long
-          </xos-alert>
-          <xos-alert config="vm.config" show="vm.field.$error.custom !== undefined && vm.field.$error.custom !== false && (vm.field.$touched || vm.form.$submitted)">
-            Field invalid
-          </xos-alert>
-        </div>
-      `,
-      transclude: true,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: function(){
-        this.config = {
-          type: 'danger'
-        }
+  .component('xosValidation', {
+    restrict: 'E',
+    bindings: {
+      field: '=',
+      form: '='
+    },
+    template: `
+      <div ng-cloak>
+        <xos-alert config="vm.config" show="vm.field.$error.required !== undefined && vm.field.$error.required !== false  && (vm.field.$touched || vm.form.$submitted)">
+          Field required
+        </xos-alert>
+        <xos-alert config="vm.config" show="vm.field.$error.email !== undefined && vm.field.$error.email !== false && (vm.field.$touched || vm.form.$submitted)">
+          This is not a valid email
+        </xos-alert>
+        <xos-alert config="vm.config" show="vm.field.$error.minlength !== undefined && vm.field.$error.minlength !== false && (vm.field.$touched || vm.form.$submitted)">
+          Too short
+        </xos-alert>
+        <xos-alert config="vm.config" show="vm.field.$error.maxlength !== undefined && vm.field.$error.maxlength !== false && (vm.field.$touched || vm.form.$submitted)">
+          Too long
+        </xos-alert>
+        <xos-alert config="vm.config" show="vm.field.$error.custom !== undefined && vm.field.$error.custom !== false && (vm.field.$touched || vm.form.$submitted)">
+          Field invalid
+        </xos-alert>
+      </div>
+    `,
+    transclude: true,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: function(){
+      this.config = {
+        type: 'danger'
       }
     }
   })

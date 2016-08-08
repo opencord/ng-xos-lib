@@ -32,6 +32,483 @@
 
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+/**
+ * © OpenCORD
+ *
+ * Visit http://guide.xosproject.org/devguide/addview/ for more information
+ *
+ * Created by teone on 3/24/16.
+ */
+
+(function () {
+  'use strict';
+
+  angular.module('xos.uiComponents')
+
+  /**
+  * @ngdoc directive
+  * @name xos.uiComponents.directive:xosSmartTable
+  * @link xos.uiComponents.directive:xosTable xosTable
+  * @link xos.uiComponents.directive:xosForm xosForm
+  * @restrict E
+  * @description The xos-table directive
+  * @param {Object} config The configuration for the component,
+  * it is composed by the name of an angular [$resource](https://docs.angularjs.org/api/ngResource/service/$resource)
+  * and an array of fields that shouldn't be printed.
+  * ```
+  * {
+      resource: 'Users',
+      hiddenFields: []
+    }
+  * ```
+  * @scope
+  * @example
+   <example module="sampleSmartTable">
+    <file name="index.html">
+      <div ng-controller="SampleCtrl as vm">
+        <xos-smart-table config="vm.config"></xos-smart-table>
+      </div>
+    </file>
+    <file name="script.js">
+      angular.module('sampleSmartTable', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
+      // This is only for documentation purpose
+      .run(function($httpBackend, _){
+        let datas = [{id: 1, name: 'Jhon', surname: 'Doe'}];
+        let count = 1;
+         let paramsUrl = new RegExp(/\/test\/(.+)/);
+         $httpBackend.whenDELETE(paramsUrl, undefined, ['id']).respond((method, url, data, headers, params) => {
+          data = angular.fromJson(data);
+          let id = url.match(paramsUrl)[1];
+          _.remove(datas, (d) => {
+            return d.id === parseInt(id);
+          })
+          return [204];
+        });
+         $httpBackend.whenGET('/test').respond(200, datas)
+        $httpBackend.whenPOST('/test').respond((method, url, data) => {
+          data = angular.fromJson(data);
+          data.id = ++count;
+          datas.push(data);
+          return [201, data, {}];
+        });
+      })
+      .factory('_', function($window){
+        return $window._;
+      })
+      .service('SampleResource', function($resource){
+        return $resource('/test/:id', {id: '@id'});
+      })
+      // End of documentation purpose, example start
+      .controller('SampleCtrl', function(){
+        this.config = {
+          resource: 'SampleResource'
+        };
+      });
+    </file>
+  </example>
+  */
+
+  .component('xosSmartTable', {
+    restrict: 'E',
+    bindings: {
+      config: '='
+    },
+    template: '\n        <div class="row" ng-show="vm.data.length > 0">\n          <div class="col-xs-12 text-right">\n            <a href="" class="btn btn-success" ng-click="vm.createItem()">\n              Add\n            </a>\n          </div>\n        </div>\n        <div class="row">\n          <div class="col-xs-12 table-responsive">\n            <xos-table config="vm.tableConfig" data="vm.data"></xos-table>\n          </div>\n        </div>\n        <div class="panel panel-default" ng-show="vm.detailedItem">\n          <div class="panel-heading">\n            <div class="row">\n              <div class="col-xs-11">\n                <h3 class="panel-title" ng-show="vm.detailedItem.id">Update {{vm.config.resource}} {{vm.detailedItem.id}}</h3>\n                <h3 class="panel-title" ng-show="!vm.detailedItem.id">Create {{vm.config.resource}} item</h3>\n              </div>\n              <div class="col-xs-1">\n                <a href="" ng-click="vm.cleanForm()">\n                  <i class="glyphicon glyphicon-remove pull-right"></i>\n                </a>\n              </div>\n            </div>\n          </div>\n          <div class="panel-body">\n            <xos-form config="vm.formConfig" ng-model="vm.detailedItem"></xos-form>\n          </div>\n        </div>\n        <xos-alert config="{type: \'success\', closeBtn: true}" show="vm.responseMsg">{{vm.responseMsg}}</xos-alert>\n        <xos-alert config="{type: \'danger\', closeBtn: true}" show="vm.responseErr">{{vm.responseErr}}</xos-alert>\n      ',
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["$injector", "LabelFormatter", "_", "XosFormHelpers", function controller($injector, LabelFormatter, _, XosFormHelpers) {
+      var _this = this;
+
+      // TODO
+      // - Validate the config (what if resource does not exist?)
+
+      // NOTE
+      // Corner case
+      // - if response is empty, how can we generate a form ?
+
+      this.responseMsg = false;
+      this.responseErr = false;
+
+      this.tableConfig = {
+        columns: [],
+        actions: [{
+          label: 'delete',
+          icon: 'remove',
+          cb: function cb(item) {
+            _this.Resource.delete({ id: item.id }).$promise.then(function () {
+              _.remove(_this.data, function (d) {
+                return d.id === item.id;
+              });
+              _this.responseMsg = _this.config.resource + ' with id ' + item.id + ' successfully deleted';
+            }).catch(function (err) {
+              _this.responseErr = err.data.detail || 'Error while deleting ' + _this.config.resource + ' with id ' + item.id;
+            });
+          },
+          color: 'red'
+        }, {
+          label: 'details',
+          icon: 'search',
+          cb: function cb(item) {
+            _this.detailedItem = item;
+          }
+        }],
+        classes: 'table table-striped table-bordered table-responsive',
+        filter: 'field',
+        order: true,
+        pagination: {
+          pageSize: 10
+        }
+      };
+
+      this.formConfig = {
+        exclude: this.config.hiddenFields,
+        fields: {},
+        formName: this.config.resource + 'Form',
+        actions: [{
+          label: 'Save',
+          icon: 'ok',
+          cb: function cb(item) {
+            var p = void 0;
+            var isNew = true;
+
+            if (item.id) {
+              p = item.$update();
+              isNew = false;
+            } else {
+              p = item.$save();
+            }
+
+            p.then(function (res) {
+              if (isNew) {
+                _this.data.push(angular.copy(res));
+              }
+              delete _this.detailedItem;
+              _this.responseMsg = _this.config.resource + ' with id ' + item.id + ' successfully saved';
+            }).catch(function (err) {
+              _this.responseErr = err.data.detail || 'Error while saving ' + _this.config.resource + ' with id ' + item.id;
+            });
+          },
+          class: 'success'
+        }]
+      };
+
+      this.cleanForm = function () {
+        delete _this.detailedItem;
+      };
+
+      this.createItem = function () {
+        _this.detailedItem = new _this.Resource();
+      };
+
+      this.Resource = $injector.get(this.config.resource);
+
+      var getData = function getData() {
+        _this.Resource.query().$promise.then(function (res) {
+
+          if (!res[0]) {
+            _this.data = res;
+            return;
+          }
+
+          var item = res[0];
+          var props = Object.keys(item);
+
+          _.remove(props, function (p) {
+            return p === 'id' || p === 'validators';
+          });
+
+          // TODO move out cb,  non sense triggering a lot of times
+          if (angular.isArray(_this.config.hiddenFields)) {
+            props = _.difference(props, _this.config.hiddenFields);
+          }
+
+          var labels = props.map(function (p) {
+            return LabelFormatter.format(p);
+          });
+
+          props.forEach(function (p, i) {
+            var fieldConfig = {
+              label: labels[i],
+              prop: p
+            };
+
+            if (angular.isString(item[p]) && typeof item[p] !== 'undefined') {
+              fieldConfig.type = _typeof(item[p]);
+            }
+
+            _this.tableConfig.columns.push(fieldConfig);
+          });
+
+          // build form structure
+          // TODO move in a pure function for testing purposes
+          props.forEach(function (p, i) {
+            _this.formConfig.fields[p] = {
+              label: LabelFormatter.format(labels[i]).replace(':', ''),
+              type: XosFormHelpers._getFieldFormat(item[p])
+            };
+          });
+
+          _this.data = res;
+        });
+      };
+
+      getData();
+    }]
+  });
+})();
+//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartTable/smartTable.component.js.map
+
+'use strict';
+
+/**
+ * © OpenCORD
+ *
+ * Visit http://guide.xosproject.org/devguide/addview/ for more information
+ *
+ * Created by teone on 3/24/16.
+ */
+
+(function () {
+  'use strict';
+
+  angular.module('xos.uiComponents')
+  /**
+    * @ngdoc directive
+    * @name xos.uiComponents.directive:xosSmartPie
+    * @restrict E
+    * @description The xos-table directive
+    * @param {Object} config The configuration for the component,
+    * it is composed by the name of an angular [$resource](https://docs.angularjs.org/api/ngResource/service/$resource)
+    * and a field name that is used to group the data.
+    * ```
+    * {
+        resource: 'Users',
+        groupBy: 'fieldName',
+        classes: 'my-custom-class',
+        labelFormatter: (labels) => {
+          // here you can format your label,
+          // you should return an array with the same order
+          return labels;
+        }
+      }
+    * ```
+    * @scope
+    * @example
+    
+    Displaying Local data
+     <example module="sampleSmartPieLocal">
+      <file name="index.html">
+        <div ng-controller="SampleCtrlLocal as vm">
+          <xos-smart-pie config="vm.configLocal"></xos-smart-pie>
+        </div>
+      </file>
+      <file name="script.js">
+        angular.module('sampleSmartPieLocal', ['xos.uiComponents'])
+        .factory('_', function($window){
+          return $window._;
+        })
+        .controller('SampleCtrlLocal', function($timeout){
+          
+          this.datas = [
+            {id: 1, first_name: 'Jon', last_name: 'aaa', category: 2},
+            {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 1},
+            {id: 3, first_name: 'Aria', last_name: 'Stark', category: 2}
+          ];
+           this.configLocal = {
+            data: [],
+            groupBy: 'category',
+            classes: 'local',
+            labelFormatter: (labels) => {
+              return labels.map(l => l === '1' ? 'North' : 'Dragon');
+            }
+          };
+          
+          $timeout(() => {
+            // this need to be triggered in this way just because of ngDoc,
+            // otherwise you can assign data directly in the config
+            this.configLocal.data = this.datas;
+          }, 1)
+        });
+      </file>
+    </example>
+     Fetching data from API
+     <example module="sampleSmartPieResource">
+      <file name="index.html">
+        <div ng-controller="SampleCtrl as vm">
+          <xos-smart-pie config="vm.config"></xos-smart-pie>
+        </div>
+      </file>
+      <file name="script.js">
+        angular.module('sampleSmartPieResource', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
+        .controller('SampleCtrl', function(){
+          this.config = {
+            resource: 'SampleResource',
+            groupBy: 'category',
+            classes: 'resource',
+            labelFormatter: (labels) => {
+              return labels.map(l => l === '1' ? 'North' : 'Dragon');
+            }
+          };
+        });
+      </file>
+      <file name="backendPoll.js">
+        angular.module('sampleSmartPieResource')
+        .run(function($httpBackend, _){
+          let datas = [
+            {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
+            {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
+            {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1}
+          ];
+           $httpBackend.whenGET('/test').respond(200, datas)
+        })
+        .factory('_', function($window){
+          return $window._;
+        })
+        .service('SampleResource', function($resource){
+          return $resource('/test/:id', {id: '@id'});
+        })
+      </file>
+    </example>
+     Polling data from API
+     <example module="sampleSmartPiePoll">
+      <file name="index.html">
+        <div ng-controller="SampleCtrl as vm">
+          <xos-smart-pie config="vm.config"></xos-smart-pie>
+        </div>
+      </file>
+      <file name="script.js">
+        angular.module('sampleSmartPiePoll', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
+        .controller('SampleCtrl', function(){
+          this.config = {
+            resource: 'SampleResource',
+            groupBy: 'category',
+            poll: 2,
+            labelFormatter: (labels) => {
+              return labels.map(l => l === '1' ? 'Active' : 'Banned');
+            }
+          };
+        });
+      </file>
+      <file name="backend.js">
+        angular.module('sampleSmartPiePoll')
+        .run(function($httpBackend, _){
+          let mock = [
+            [
+              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
+              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
+              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1},
+              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 1}
+            ],
+             [
+              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
+              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
+              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 2},
+              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 2}
+            ],
+             [
+              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
+              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
+              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1},
+              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 2}
+            ]
+          ];
+          $httpBackend.whenGET('/test').respond(function(method, url, data, headers, params) {
+            return [200, mock[Math.round(Math.random() * 3)]];
+          });
+        })
+        .factory('_', function($window){
+          return $window._;
+        })
+        .service('SampleResource', function($resource){
+          return $resource('/test/:id', {id: '@id'});
+        })
+      </file>
+    </example>
+    */
+  .component('xosSmartPie', {
+    restrict: 'E',
+    bindings: {
+      config: '='
+    },
+    template: '\n      <canvas\n        class="chart chart-pie {{vm.config.classes}}"\n        chart-data="vm.data" chart-labels="vm.labels"\n        chart-legend="{{vm.config.legend}}">\n      </canvas>\n    ',
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["$injector", "$interval", "$scope", "$timeout", "_", function controller($injector, $interval, $scope, $timeout, _) {
+      var _this = this;
+
+      if (!this.config.resource && !this.config.data) {
+        throw new Error('[xosSmartPie] Please provide a resource or an array of data in the configuration');
+      }
+
+      var groupData = function groupData(data) {
+        return _.groupBy(data, _this.config.groupBy);
+      };
+      var formatData = function formatData(data) {
+        return _.reduce(Object.keys(data), function (list, group) {
+          return list.concat(data[group].length);
+        }, []);
+      };
+      var formatLabels = function formatLabels(data) {
+        return angular.isFunction(_this.config.labelFormatter) ? _this.config.labelFormatter(Object.keys(data)) : Object.keys(data);
+      };
+
+      var prepareData = function prepareData(data) {
+        // group data
+        var grouped = groupData(data);
+        _this.data = formatData(grouped);
+        // create labels
+        _this.labels = formatLabels(grouped);
+      };
+
+      if (this.config.resource) {
+        (function () {
+
+          _this.Resource = $injector.get(_this.config.resource);
+          var getData = function getData() {
+            _this.Resource.query().$promise.then(function (res) {
+
+              if (!res[0]) {
+                return;
+              }
+
+              prepareData(res);
+            });
+          };
+
+          getData();
+
+          if (_this.config.poll) {
+            $interval(function () {
+              getData();
+            }, _this.config.poll * 1000);
+          }
+        })();
+      } else {
+        $scope.$watch(function () {
+          return _this.config.data;
+        }, function (data) {
+          if (data) {
+            prepareData(_this.config.data);
+          }
+        }, true);
+      }
+
+      $scope.$on('create', function (event, chart) {
+        console.log('create: ' + chart.id);
+      });
+
+      $scope.$on('destroy', function (event, chart) {
+        console.log('destroy: ' + chart.id);
+      });
+    }]
+  });
+})();
+//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartPie/smartPie.component.js.map
+
+'use strict';
+
 /**
  * © OpenCORD
  *
@@ -107,23 +584,21 @@
   </example>
     */
 
-  .directive('xosValidation', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        field: '=',
-        form: '='
-      },
-      template: '\n        <div ng-cloak>\n          <xos-alert config="vm.config" show="vm.field.$error.required !== undefined && vm.field.$error.required !== false  && (vm.field.$touched || vm.form.$submitted)">\n            Field required\n          </xos-alert>\n          <xos-alert config="vm.config" show="vm.field.$error.email !== undefined && vm.field.$error.email !== false && (vm.field.$touched || vm.form.$submitted)">\n            This is not a valid email\n          </xos-alert>\n          <xos-alert config="vm.config" show="vm.field.$error.minlength !== undefined && vm.field.$error.minlength !== false && (vm.field.$touched || vm.form.$submitted)">\n            Too short\n          </xos-alert>\n          <xos-alert config="vm.config" show="vm.field.$error.maxlength !== undefined && vm.field.$error.maxlength !== false && (vm.field.$touched || vm.form.$submitted)">\n            Too long\n          </xos-alert>\n          <xos-alert config="vm.config" show="vm.field.$error.custom !== undefined && vm.field.$error.custom !== false && (vm.field.$touched || vm.form.$submitted)">\n            Field invalid\n          </xos-alert>\n        </div>\n      ',
-      transclude: true,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: function controller() {
-        this.config = {
-          type: 'danger'
-        };
-      }
-    };
+  .component('xosValidation', {
+    restrict: 'E',
+    bindings: {
+      field: '=',
+      form: '='
+    },
+    template: '\n      <div ng-cloak>\n        <xos-alert config="vm.config" show="vm.field.$error.required !== undefined && vm.field.$error.required !== false  && (vm.field.$touched || vm.form.$submitted)">\n          Field required\n        </xos-alert>\n        <xos-alert config="vm.config" show="vm.field.$error.email !== undefined && vm.field.$error.email !== false && (vm.field.$touched || vm.form.$submitted)">\n          This is not a valid email\n        </xos-alert>\n        <xos-alert config="vm.config" show="vm.field.$error.minlength !== undefined && vm.field.$error.minlength !== false && (vm.field.$touched || vm.form.$submitted)">\n          Too short\n        </xos-alert>\n        <xos-alert config="vm.config" show="vm.field.$error.maxlength !== undefined && vm.field.$error.maxlength !== false && (vm.field.$touched || vm.form.$submitted)">\n          Too long\n        </xos-alert>\n        <xos-alert config="vm.config" show="vm.field.$error.custom !== undefined && vm.field.$error.custom !== false && (vm.field.$touched || vm.form.$submitted)">\n          Field invalid\n        </xos-alert>\n      </div>\n    ',
+    transclude: true,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: function controller() {
+      this.config = {
+        type: 'danger'
+      };
+    }
   });
 })();
 //# sourceMappingURL=../../../maps/ui_components/dumbComponents/validation/validation.component.js.map
@@ -452,94 +927,92 @@
   </example>
   **/
 
-  .directive('xosTable', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        data: '=',
-        config: '='
-      },
-      template: '\n          <div ng-show="vm.data.length > 0 && vm.loader == false">\n            <div class="row" ng-if="vm.config.filter == \'fulltext\'">\n              <div class="col-xs-12">\n                <input\n                  class="form-control"\n                  placeholder="Type to search.."\n                  type="text"\n                  ng-model="vm.query"/>\n              </div>\n            </div>\n            <table ng-class="vm.classes" ng-hide="vm.data.length == 0">\n              <thead>\n                <tr>\n                  <th ng-repeat="col in vm.columns">\n                    {{col.label}}\n                    <span ng-if="vm.config.order">\n                      <a href="" ng-click="vm.orderBy = col.prop; vm.reverse = false">\n                        <i class="glyphicon glyphicon-chevron-up"></i>\n                      </a>\n                      <a href="" ng-click="vm.orderBy = col.prop; vm.reverse = true">\n                        <i class="glyphicon glyphicon-chevron-down"></i>\n                      </a>\n                    </span>\n                  </th>\n                  <th ng-if="vm.config.actions">Actions:</th>\n                </tr>\n              </thead>\n              <tbody ng-if="vm.config.filter == \'field\'">\n                <tr>\n                  <td ng-repeat="col in vm.columns">\n                    <input\n                      ng-if="col.type !== \'boolean\' && col.type !== \'array\' && col.type !== \'object\' && col.type !== \'custom\'"\n                      class="form-control"\n                      placeholder="Type to search by {{col.label}}"\n                      type="text"\n                      ng-model="vm.query[col.prop]"/>\n                    <select\n                      ng-if="col.type === \'boolean\'"\n                      class="form-control"\n                      ng-model="vm.query[col.prop]">\n                      <option value="">-</option>\n                      <option value="true">True</option>\n                      <option value="false">False</option>\n                    </select>\n                  </td>\n                  <td ng-if="vm.config.actions"></td>\n                </tr>\n              </tbody>\n              <tbody>\n                <tr ng-repeat="item in vm.data | filter:vm.query:vm.comparator | orderBy:vm.orderBy:vm.reverse | pagination:vm.currentPage * vm.config.pagination.pageSize | limitTo: (vm.config.pagination.pageSize || vm.data.length) track by $index">\n                  <td ng-repeat="col in vm.columns" xos-link-wrapper>\n                    <span ng-if="!col.type">{{item[col.prop]}}</span>\n                    <span ng-if="col.type === \'boolean\'">\n                      <i class="glyphicon"\n                        ng-class="{\'glyphicon-ok\': item[col.prop], \'glyphicon-remove\': !item[col.prop]}">\n                      </i>\n                    </span>\n                    <span ng-if="col.type === \'date\'">\n                      {{item[col.prop] | date:\'H:mm MMM d, yyyy\'}}\n                    </span>\n                    <span ng-if="col.type === \'array\'">\n                      {{item[col.prop] | arrayToList}}\n                    </span>\n                    <span ng-if="col.type === \'object\'">\n                      <dl class="dl-horizontal">\n                        <span ng-repeat="(k,v) in item[col.prop]">\n                          <dt>{{k}}</dt>\n                          <dd>{{v}}</dd>\n                        </span>\n                      </dl>\n                    </span>\n                    <span ng-if="col.type === \'custom\'">\n                      {{col.formatter(item)}}\n                    </span>\n                    <span ng-if="col.type === \'icon\'">\n                      <i class="glyphicon glyphicon-{{col.formatter(item)}}">\n                      </i>\n                    </span>\n                  </td>\n                  <td ng-if="vm.config.actions">\n                    <a href=""\n                      ng-repeat="action in vm.config.actions"\n                      ng-click="action.cb(item)"\n                      title="{{action.label}}">\n                      <i\n                        class="glyphicon glyphicon-{{action.icon}}"\n                        style="color: {{action.color}};"></i>\n                    </a>\n                  </td>\n                </tr>\n              </tbody>\n            </table>\n            <xos-pagination\n              ng-if="vm.config.pagination"\n              page-size="vm.config.pagination.pageSize"\n              total-elements="vm.data.length"\n              change="vm.goToPage">\n              </xos-pagination>\n          </div>\n          <div ng-show="(vm.data.length == 0 || !vm.data) && vm.loader == false">\n             <xos-alert config="{type: \'info\'}">\n              No data to show.\n            </xos-alert>\n          </div>\n          <div ng-show="vm.loader == true">\n            <div class="loader"></div>\n          </div>\n        ',
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["_", "$scope", "Comparator", function controller(_, $scope, Comparator) {
-        var _this = this;
+  .component('xosTable', {
+    restrict: 'E',
+    bindings: {
+      data: '=',
+      config: '='
+    },
+    template: '\n        <div ng-show="vm.data.length > 0 && vm.loader == false">\n          <div class="row" ng-if="vm.config.filter == \'fulltext\'">\n            <div class="col-xs-12">\n              <input\n                class="form-control"\n                placeholder="Type to search.."\n                type="text"\n                ng-model="vm.query"/>\n            </div>\n          </div>\n          <table ng-class="vm.classes" ng-hide="vm.data.length == 0">\n            <thead>\n              <tr>\n                <th ng-repeat="col in vm.columns">\n                  {{col.label}}\n                  <span ng-if="vm.config.order">\n                    <a href="" ng-click="vm.orderBy = col.prop; vm.reverse = false">\n                      <i class="glyphicon glyphicon-chevron-up"></i>\n                    </a>\n                    <a href="" ng-click="vm.orderBy = col.prop; vm.reverse = true">\n                      <i class="glyphicon glyphicon-chevron-down"></i>\n                    </a>\n                  </span>\n                </th>\n                <th ng-if="vm.config.actions">Actions:</th>\n              </tr>\n            </thead>\n            <tbody ng-if="vm.config.filter == \'field\'">\n              <tr>\n                <td ng-repeat="col in vm.columns">\n                  <input\n                    ng-if="col.type !== \'boolean\' && col.type !== \'array\' && col.type !== \'object\' && col.type !== \'custom\'"\n                    class="form-control"\n                    placeholder="Type to search by {{col.label}}"\n                    type="text"\n                    ng-model="vm.query[col.prop]"/>\n                  <select\n                    ng-if="col.type === \'boolean\'"\n                    class="form-control"\n                    ng-model="vm.query[col.prop]">\n                    <option value="">-</option>\n                    <option value="true">True</option>\n                    <option value="false">False</option>\n                  </select>\n                </td>\n                <td ng-if="vm.config.actions"></td>\n              </tr>\n            </tbody>\n            <tbody>\n              <tr ng-repeat="item in vm.data | filter:vm.query:vm.comparator | orderBy:vm.orderBy:vm.reverse | pagination:vm.currentPage * vm.config.pagination.pageSize | limitTo: (vm.config.pagination.pageSize || vm.data.length) track by $index">\n                <td ng-repeat="col in vm.columns" xos-link-wrapper>\n                  <span ng-if="!col.type">{{item[col.prop]}}</span>\n                  <span ng-if="col.type === \'boolean\'">\n                    <i class="glyphicon"\n                      ng-class="{\'glyphicon-ok\': item[col.prop], \'glyphicon-remove\': !item[col.prop]}">\n                    </i>\n                  </span>\n                  <span ng-if="col.type === \'date\'">\n                    {{item[col.prop] | date:\'H:mm MMM d, yyyy\'}}\n                  </span>\n                  <span ng-if="col.type === \'array\'">\n                    {{item[col.prop] | arrayToList}}\n                  </span>\n                  <span ng-if="col.type === \'object\'">\n                    <dl class="dl-horizontal">\n                      <span ng-repeat="(k,v) in item[col.prop]">\n                        <dt>{{k}}</dt>\n                        <dd>{{v}}</dd>\n                      </span>\n                    </dl>\n                  </span>\n                  <span ng-if="col.type === \'custom\'">\n                    {{col.formatter(item)}}\n                  </span>\n                  <span ng-if="col.type === \'icon\'">\n                    <i class="glyphicon glyphicon-{{col.formatter(item)}}">\n                    </i>\n                  </span>\n                </td>\n                <td ng-if="vm.config.actions">\n                  <a href=""\n                    ng-repeat="action in vm.config.actions"\n                    ng-click="action.cb(item)"\n                    title="{{action.label}}">\n                    <i\n                      class="glyphicon glyphicon-{{action.icon}}"\n                      style="color: {{action.color}};"></i>\n                  </a>\n                </td>\n              </tr>\n            </tbody>\n          </table>\n          <xos-pagination\n            ng-if="vm.config.pagination"\n            page-size="vm.config.pagination.pageSize"\n            total-elements="vm.data.length"\n            change="vm.goToPage">\n            </xos-pagination>\n        </div>\n        <div ng-show="(vm.data.length == 0 || !vm.data) && vm.loader == false">\n           <xos-alert config="{type: \'info\'}">\n            No data to show.\n          </xos-alert>\n        </div>\n        <div ng-show="vm.loader == true">\n          <div class="loader"></div>\n        </div>\n      ',
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["_", "$scope", "Comparator", function controller(_, $scope, Comparator) {
+      var _this = this;
 
-        this.comparator = Comparator;
+      this.comparator = Comparator;
 
-        this.loader = true;
+      this.loader = true;
 
-        $scope.$watch(function () {
-          return _this.data;
-        }, function (data) {
-          if (angular.isDefined(data)) {
-            _this.loader = false;
+      $scope.$watch(function () {
+        return _this.data;
+      }, function (data) {
+        if (angular.isDefined(data)) {
+          _this.loader = false;
+        }
+      });
+
+      if (!this.config) {
+        throw new Error('[xosTable] Please provide a configuration via the "config" attribute');
+      }
+
+      if (!this.config.columns) {
+        throw new Error('[xosTable] Please provide a columns list in the configuration');
+      }
+
+      // handle default ordering
+      if (this.config.order && angular.isObject(this.config.order)) {
+        this.reverse = this.config.order.reverse || false;
+        this.orderBy = this.config.order.field || 'id';
+      }
+
+      // if columns with type 'custom' are provided
+      // check that a custom formatte3 is provided too
+      var customCols = _.filter(this.config.columns, { type: 'custom' });
+      if (angular.isArray(customCols) && customCols.length > 0) {
+        _.forEach(customCols, function (col) {
+          if (!col.formatter || !angular.isFunction(col.formatter)) {
+            throw new Error('[xosTable] You have provided a custom field type, a formatter function should provided too.');
           }
         });
+      }
 
-        if (!this.config) {
-          throw new Error('[xosTable] Please provide a configuration via the "config" attribute');
-        }
-
-        if (!this.config.columns) {
-          throw new Error('[xosTable] Please provide a columns list in the configuration');
-        }
-
-        // handle default ordering
-        if (this.config.order && angular.isObject(this.config.order)) {
-          this.reverse = this.config.order.reverse || false;
-          this.orderBy = this.config.order.field || 'id';
-        }
-
-        // if columns with type 'custom' are provided
-        // check that a custom formatte3 is provided too
-        var customCols = _.filter(this.config.columns, { type: 'custom' });
-        if (angular.isArray(customCols) && customCols.length > 0) {
-          _.forEach(customCols, function (col) {
-            if (!col.formatter || !angular.isFunction(col.formatter)) {
-              throw new Error('[xosTable] You have provided a custom field type, a formatter function should provided too.');
-            }
-          });
-        }
-
-        // if columns with type 'icon' are provided
-        // check that a custom formatte3 is provided too
-        var iconCols = _.filter(this.config.columns, { type: 'icon' });
-        if (angular.isArray(iconCols) && iconCols.length > 0) {
-          _.forEach(iconCols, function (col) {
-            if (!col.formatter || !angular.isFunction(col.formatter)) {
-              throw new Error('[xosTable] You have provided an icon field type, a formatter function should provided too.');
-            }
-          });
-        }
-
-        // if a link property is passed,
-        // it should be a function
-        var linkedColumns = _.filter(this.config.columns, function (col) {
-          return angular.isDefined(col.link);
+      // if columns with type 'icon' are provided
+      // check that a custom formatte3 is provided too
+      var iconCols = _.filter(this.config.columns, { type: 'icon' });
+      if (angular.isArray(iconCols) && iconCols.length > 0) {
+        _.forEach(iconCols, function (col) {
+          if (!col.formatter || !angular.isFunction(col.formatter)) {
+            throw new Error('[xosTable] You have provided an icon field type, a formatter function should provided too.');
+          }
         });
-        if (angular.isArray(linkedColumns) && linkedColumns.length > 0) {
-          _.forEach(linkedColumns, function (col) {
-            if (!angular.isFunction(col.link)) {
-              throw new Error('[xosTable] The link property should be a function.');
-            }
-          });
-        }
+      }
 
-        this.columns = this.config.columns;
-        this.classes = this.config.classes || 'table table-striped table-bordered';
+      // if a link property is passed,
+      // it should be a function
+      var linkedColumns = _.filter(this.config.columns, function (col) {
+        return angular.isDefined(col.link);
+      });
+      if (angular.isArray(linkedColumns) && linkedColumns.length > 0) {
+        _.forEach(linkedColumns, function (col) {
+          if (!angular.isFunction(col.link)) {
+            throw new Error('[xosTable] The link property should be a function.');
+          }
+        });
+      }
 
-        if (this.config.actions) {
-          // TODO validate action format
-        }
-        if (this.config.pagination) {
-          this.currentPage = 0;
-          this.goToPage = function (n) {
-            _this.currentPage = n;
-          };
-        }
-      }]
-    };
+      this.columns = this.config.columns;
+      this.classes = this.config.classes || 'table table-striped table-bordered';
+
+      if (this.config.actions) {
+        // TODO validate action format
+      }
+      if (this.config.pagination) {
+        this.currentPage = 0;
+        this.goToPage = function (n) {
+          _this.currentPage = n;
+        };
+      }
+    }]
   })
   // TODO move in separate files
   // TODO test
@@ -611,49 +1084,47 @@
   </example>
   **/
 
-  .directive('xosPagination', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        pageSize: '=',
-        totalElements: '=',
-        change: '='
-      },
-      template: '\n        <div class="row" ng-if="vm.pageList.length > 1">\n          <div class="col-xs-12 text-center">\n            <ul class="pagination">\n              <li\n                ng-click="vm.goToPage(vm.currentPage - 1)"\n                ng-class="{disabled: vm.currentPage == 0}">\n                <a href="" aria-label="Previous">\n                    <span aria-hidden="true">&laquo;</span>\n                </a>\n              </li>\n              <li ng-repeat="i in vm.pageList" ng-class="{active: i === vm.currentPage}">\n                <a href="" ng-click="vm.goToPage(i)">{{i + 1}}</a>\n              </li>\n              <li\n                ng-click="vm.goToPage(vm.currentPage + 1)"\n                ng-class="{disabled: vm.currentPage == vm.pages - 1}">\n                <a href="" aria-label="Next">\n                    <span aria-hidden="true">&raquo;</span>\n                </a>\n              </li>\n            </ul>\n          </div>\n        </div>\n      ',
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["$scope", function controller($scope) {
-        var _this = this;
+  .component('xosPagination', {
+    restrict: 'E',
+    bindings: {
+      pageSize: '=',
+      totalElements: '=',
+      change: '='
+    },
+    template: '\n      <div class="row" ng-if="vm.pageList.length > 1">\n        <div class="col-xs-12 text-center">\n          <ul class="pagination">\n            <li\n              ng-click="vm.goToPage(vm.currentPage - 1)"\n              ng-class="{disabled: vm.currentPage == 0}">\n              <a href="" aria-label="Previous">\n                  <span aria-hidden="true">&laquo;</span>\n              </a>\n            </li>\n            <li ng-repeat="i in vm.pageList" ng-class="{active: i === vm.currentPage}">\n              <a href="" ng-click="vm.goToPage(i)">{{i + 1}}</a>\n            </li>\n            <li\n              ng-click="vm.goToPage(vm.currentPage + 1)"\n              ng-class="{disabled: vm.currentPage == vm.pages - 1}">\n              <a href="" aria-label="Next">\n                  <span aria-hidden="true">&raquo;</span>\n              </a>\n            </li>\n          </ul>\n        </div>\n      </div>\n    ',
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["$scope", function controller($scope) {
+      var _this = this;
 
-        this.currentPage = 0;
+      this.currentPage = 0;
 
-        this.goToPage = function (n) {
-          if (n < 0 || n === _this.pages) {
-            return;
-          }
-          _this.currentPage = n;
-          _this.change(n);
-        };
+      this.goToPage = function (n) {
+        if (n < 0 || n === _this.pages) {
+          return;
+        }
+        _this.currentPage = n;
+        _this.change(n);
+      };
 
-        this.createPages = function (pages) {
-          var arr = [];
-          for (var i = 0; i < pages; i++) {
-            arr.push(i);
-          }
-          return arr;
-        };
+      this.createPages = function (pages) {
+        var arr = [];
+        for (var i = 0; i < pages; i++) {
+          arr.push(i);
+        }
+        return arr;
+      };
 
-        // watch for data changes
-        $scope.$watch(function () {
-          return _this.totalElements;
-        }, function () {
-          if (_this.totalElements) {
-            _this.pages = Math.ceil(_this.totalElements / _this.pageSize);
-            _this.pageList = _this.createPages(_this.pages);
-          }
-        });
-      }]
-    };
+      // watch for data changes
+      $scope.$watch(function () {
+        return _this.totalElements;
+      }, function () {
+        if (_this.totalElements) {
+          _this.pages = Math.ceil(_this.totalElements / _this.pageSize);
+          _this.pageList = _this.createPages(_this.pages);
+        }
+      });
+    }]
   }).filter('pagination', function () {
     return function (input, start) {
       if (!input || !angular.isArray(input)) {
@@ -862,67 +1333,65 @@
   </example>
    **/
 
-  .directive('xosForm', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        config: '=',
-        ngModel: '='
-      },
-      template: '\n        <form name="vm.{{vm.config.formName || \'form\'}}" novalidate>\n          <div class="form-group" ng-repeat="(name, field) in vm.formField">\n            <xos-field name="name" field="field" ng-model="vm.ngModel[name]"></xos-field>\n            <xos-validation field="vm[vm.config.formName || \'form\'][name]" form = "vm[vm.config.formName || \'form\']"></xos-validation>\n            <div class="alert alert-info" ng-show="(field.hint).length >0" role="alert">{{field.hint}}</div>\n          </div>\n          <div class="form-group" ng-if="vm.config.actions">\n          <xos-alert config="vm.config.feedback" show="vm.config.feedback.show">{{vm.config.feedback.message}}</xos-alert>\n\n            <button role="button" href=""\n              ng-repeat="action in vm.config.actions"\n              ng-click="action.cb(vm.ngModel, vm[vm.config.formName || \'form\'])"\n              class="btn btn-{{action.class}}"\n              title="{{action.label}}">\n              <i class="glyphicon glyphicon-{{action.icon}}"></i>\n              {{action.label}}\n            </button>\n          </div>\n        </form>\n      ',
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["$scope", "$log", "_", "XosFormHelpers", function controller($scope, $log, _, XosFormHelpers) {
-        var _this = this;
+  .component('xosForm', {
+    restrict: 'E',
+    bindings: {
+      config: '=',
+      ngModel: '='
+    },
+    template: '\n      <form name="vm.{{vm.config.formName || \'form\'}}" novalidate>\n        <div class="form-group" ng-repeat="(name, field) in vm.formField">\n          <xos-field name="name" field="field" ng-model="vm.ngModel[name]"></xos-field>\n          <xos-validation field="vm[vm.config.formName || \'form\'][name]" form = "vm[vm.config.formName || \'form\']"></xos-validation>\n          <div class="alert alert-info" ng-show="(field.hint).length >0" role="alert">{{field.hint}}</div>\n        </div>\n        <div class="form-group" ng-if="vm.config.actions">\n        <xos-alert config="vm.config.feedback" show="vm.config.feedback.show">{{vm.config.feedback.message}}</xos-alert>\n\n          <button role="button" href=""\n            ng-repeat="action in vm.config.actions"\n            ng-click="action.cb(vm.ngModel, vm[vm.config.formName || \'form\'])"\n            class="btn btn-{{action.class}}"\n            title="{{action.label}}">\n            <i class="glyphicon glyphicon-{{action.icon}}"></i>\n            {{action.label}}\n          </button>\n        </div>\n      </form>\n    ',
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["$scope", "$log", "_", "XosFormHelpers", function controller($scope, $log, _, XosFormHelpers) {
+      var _this = this;
 
-        if (!this.config) {
-          throw new Error('[xosForm] Please provide a configuration via the "config" attribute');
+      if (!this.config) {
+        throw new Error('[xosForm] Please provide a configuration via the "config" attribute');
+      }
+
+      if (!this.config.actions) {
+        throw new Error('[xosForm] Please provide an action list in the configuration');
+      }
+
+      if (!this.config.feedback) {
+        this.config.feedback = {
+          show: false,
+          message: 'Form submitted successfully !!!',
+          type: 'success'
+        };
+      }
+
+      this.excludedField = ['id', 'validators', 'created', 'updated', 'deleted', 'backend_status'];
+      if (this.config && this.config.exclude) {
+        this.excludedField = this.excludedField.concat(this.config.exclude);
+      }
+
+      this.formField = [];
+
+      $scope.$watch(function () {
+        return _this.config;
+      }, function () {
+        if (!_this.ngModel) {
+          return;
         }
+        var diff = _.difference(Object.keys(_this.ngModel), _this.excludedField);
+        var modelField = XosFormHelpers.parseModelField(diff);
+        _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, _this.ngModel);
+      }, true);
 
-        if (!this.config.actions) {
-          throw new Error('[xosForm] Please provide an action list in the configuration');
+      $scope.$watch(function () {
+        return _this.ngModel;
+      }, function (model) {
+        // empty from old stuff
+        _this.formField = {};
+        if (!model) {
+          return;
         }
-
-        if (!this.config.feedback) {
-          this.config.feedback = {
-            show: false,
-            message: 'Form submitted successfully !!!',
-            type: 'success'
-          };
-        }
-
-        this.excludedField = ['id', 'validators', 'created', 'updated', 'deleted', 'backend_status'];
-        if (this.config && this.config.exclude) {
-          this.excludedField = this.excludedField.concat(this.config.exclude);
-        }
-
-        this.formField = [];
-
-        $scope.$watch(function () {
-          return _this.config;
-        }, function () {
-          if (!_this.ngModel) {
-            return;
-          }
-          var diff = _.difference(Object.keys(_this.ngModel), _this.excludedField);
-          var modelField = XosFormHelpers.parseModelField(diff);
-          _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, _this.ngModel);
-        }, true);
-
-        $scope.$watch(function () {
-          return _this.ngModel;
-        }, function (model) {
-          // empty from old stuff
-          _this.formField = {};
-          if (!model) {
-            return;
-          }
-          var diff = _.difference(Object.keys(model), _this.excludedField);
-          var modelField = XosFormHelpers.parseModelField(diff);
-          _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, model);
-        });
-      }]
-    };
+        var diff = _.difference(Object.keys(model), _this.excludedField);
+        var modelField = XosFormHelpers.parseModelField(diff);
+        _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, model);
+      });
+    }]
   });
 })();
 //# sourceMappingURL=../../../maps/ui_components/dumbComponents/form/form.component.js.map
@@ -1067,44 +1536,42 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
         </file>
       </example>
     */
-  .directive('xosField', ["RecursionHelper", function (RecursionHelper) {
-    return {
-      restrict: 'E',
-      scope: {
-        name: '=',
-        field: '=',
-        ngModel: '='
-      },
-      template: '\n        <label ng-if="vm.field.type !== \'object\'">{{vm.field.label}}</label>\n            <input\n              xos-custom-validator custom-validator="vm.field.validators.custom || null"\n              ng-if="vm.field.type !== \'boolean\' && vm.field.type !== \'object\' && vm.field.type !== \'select\'"\n              type="{{vm.field.type}}"\n              name="{{vm.name}}"\n              class="form-control"\n              ng-model="vm.ngModel"\n              ng-minlength="vm.field.validators.minlength || 0"\n              ng-maxlength="vm.field.validators.maxlength || 2000"\n              ng-required="vm.field.validators.required || false" />\n              <select class="form-control" ng-if ="vm.field.type === \'select\'"\n                name = "{{vm.name}}"\n                ng-options="item.id as item.label for item in vm.field.options"\n                ng-model="vm.ngModel"\n                ng-required="vm.field.validators.required || false">\n                </select>\n            <span class="boolean-field" ng-if="vm.field.type === \'boolean\'">\n              <a href="#"\n                class="btn btn-success"\n                ng-show="vm.ngModel"\n                ng-click="vm.ngModel = false">\n                <i class="glyphicon glyphicon-ok"></i>\n              </a>\n              <a href="#"\n                class="btn btn-danger"\n                ng-show="!vm.ngModel"\n                ng-click="vm.ngModel = true">\n                <i class="glyphicon glyphicon-remove"></i>\n              </a>\n            </span>\n            <div\n              class="panel panel-default object-field"\n              ng-if="vm.field.type == \'object\' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"\n              >\n              <div class="panel-heading">{{vm.field.label}}</div>\n              <div class="panel-body">\n                <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">\n                  <xos-field\n                    name="k"\n                    field="{label: vm.formatLabel(k), type: vm.getType(v)}"\n                    ng-model="v">\n                  </xos-field>\n                </div>\n                <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">\n                  <xos-field\n                    name="k"\n                    field="{\n                      label: v.label || vm.formatLabel(k),\n                      type: v.type,\n                      validators: v.validators\n                    }"\n                    ng-model="vm.ngModel[k]">\n                  </xos-field>\n                </div>\n              </div>\n            </div>\n      ',
-      bindToController: true,
-      controllerAs: 'vm',
-      // the compile cicle is needed to support recursion
-      compile: function compile(element) {
-        return RecursionHelper.compile(element);
-      },
-      controller: ["$attrs", "XosFormHelpers", "LabelFormatter", function controller($attrs, XosFormHelpers, LabelFormatter) {
+  .component('xosField', {
+    restrict: 'E',
+    bindings: {
+      name: '=',
+      field: '=',
+      ngModel: '='
+    },
+    template: '\n        <label ng-if="vm.field.type !== \'object\'">{{vm.field.label}}</label>\n            <input\n              xos-custom-validator custom-validator="vm.field.validators.custom || null"\n              ng-if="vm.field.type !== \'boolean\' && vm.field.type !== \'object\' && vm.field.type !== \'select\'"\n              type="{{vm.field.type}}"\n              name="{{vm.name}}"\n              class="form-control"\n              ng-model="vm.ngModel"\n              ng-minlength="vm.field.validators.minlength || 0"\n              ng-maxlength="vm.field.validators.maxlength || 2000"\n              ng-required="vm.field.validators.required || false" />\n              <select class="form-control" ng-if ="vm.field.type === \'select\'"\n                name = "{{vm.name}}"\n                ng-options="item.id as item.label for item in vm.field.options"\n                ng-model="vm.ngModel"\n                ng-required="vm.field.validators.required || false">\n                </select>\n            <span class="boolean-field" ng-if="vm.field.type === \'boolean\'">\n              <a href="#"\n                class="btn btn-success"\n                ng-show="vm.ngModel"\n                ng-click="vm.ngModel = false">\n                <i class="glyphicon glyphicon-ok"></i>\n              </a>\n              <a href="#"\n                class="btn btn-danger"\n                ng-show="!vm.ngModel"\n                ng-click="vm.ngModel = true">\n                <i class="glyphicon glyphicon-remove"></i>\n              </a>\n            </span>\n            <div\n              class="panel panel-default object-field"\n              ng-if="vm.field.type == \'object\' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"\n              >\n              <div class="panel-heading">{{vm.field.label}}</div>\n              <div class="panel-body">\n                <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">\n                  <xos-field\n                    name="k"\n                    field="{label: vm.formatLabel(k), type: vm.getType(v)}"\n                    ng-model="v">\n                  </xos-field>\n                </div>\n                <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">\n                  <xos-field\n                    name="k"\n                    field="{\n                      label: v.label || vm.formatLabel(k),\n                      type: v.type,\n                      validators: v.validators\n                    }"\n                    ng-model="vm.ngModel[k]">\n                  </xos-field>\n                </div>\n              </div>\n            </div>\n      ',
+    bindToController: true,
+    controllerAs: 'vm',
+    // the compile cicle is needed to support recursion
+    //compile: function (element) {
+    //  return RecursionHelper.compile(element);
+    //},
+    controller: ["$attrs", "XosFormHelpers", "LabelFormatter", function controller($attrs, XosFormHelpers, LabelFormatter) {
 
-        if (!this.name) {
-          throw new Error('[xosField] Please provide a field name');
-        }
-        if (!this.field) {
-          throw new Error('[xosField] Please provide a field definition');
-        }
-        if (!this.field.type) {
-          throw new Error('[xosField] Please provide a type in the field definition');
-        }
-        if (!$attrs.ngModel) {
-          throw new Error('[xosField] Please provide an ng-model');
-        }
-        this.getType = XosFormHelpers._getFieldFormat;
-        this.formatLabel = LabelFormatter.format;
+      if (!this.name) {
+        throw new Error('[xosField] Please provide a field name');
+      }
+      if (!this.field) {
+        throw new Error('[xosField] Please provide a field definition');
+      }
+      if (!this.field.type) {
+        throw new Error('[xosField] Please provide a type in the field definition');
+      }
+      if (!$attrs.ngModel) {
+        throw new Error('[xosField] Please provide an ng-model');
+      }
+      this.getType = XosFormHelpers._getFieldFormat;
+      this.formatLabel = LabelFormatter.format;
 
-        this.isEmptyObject = function (o) {
-          return o ? Object.keys(o).length === 0 : true;
-        };
-      }]
-    };
-  }])
+      this.isEmptyObject = function (o) {
+        return o ? Object.keys(o).length === 0 : true;
+      };
+    }]
+  })
 
   /**
    * @ngdoc directive
@@ -1247,525 +1714,42 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
   </example>
   **/
 
-  .directive('xosAlert', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        config: '=',
-        show: '=?'
-      },
-      template: '\n        <div ng-cloak class="alert alert-{{vm.config.type}}" ng-hide="!vm.show">\n          <button type="button" class="close" ng-if="vm.config.closeBtn" ng-click="vm.dismiss()">\n            <span aria-hidden="true">&times;</span>\n          </button>\n          <p ng-transclude></p>\n        </div>\n      ',
-      transclude: true,
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["$timeout", function controller($timeout) {
-        var _this = this;
+  .component('xosAlert', {
+    restrict: 'E',
+    bindings: {
+      config: '=',
+      show: '=?'
+    },
+    template: '\n      <div ng-cloak class="alert alert-{{vm.config.type}}" ng-hide="!vm.show">\n        <button type="button" class="close" ng-if="vm.config.closeBtn" ng-click="vm.dismiss()">\n          <span aria-hidden="true">&times;</span>\n        </button>\n        <p ng-transclude></p>\n      </div>\n    ',
+    transclude: true,
+    bindToController: true,
+    controllerAs: 'vm',
+    controller: ["$timeout", function controller($timeout) {
+      var _this = this;
 
-        if (!this.config) {
-          throw new Error('[xosAlert] Please provide a configuration via the "config" attribute');
-        }
+      if (!this.config) {
+        throw new Error('[xosAlert] Please provide a configuration via the "config" attribute');
+      }
 
-        // default the value to true
-        this.show = this.show !== false;
+      // default the value to true
+      this.show = this.show !== false;
 
-        this.dismiss = function () {
-          _this.show = false;
-        };
+      this.dismiss = function () {
+        _this.show = false;
+      };
 
-        if (this.config.autoHide) {
-          (function () {
-            var to = $timeout(function () {
-              _this.dismiss();
-              $timeout.cancel(to);
-            }, _this.config.autoHide);
-          })();
-        }
-      }]
-    };
+      if (this.config.autoHide) {
+        (function () {
+          var to = $timeout(function () {
+            _this.dismiss();
+            $timeout.cancel(to);
+          }, _this.config.autoHide);
+        })();
+      }
+    }]
   });
 })();
 //# sourceMappingURL=../../../maps/ui_components/dumbComponents/alert/alert.component.js.map
-
-'use strict';
-
-/**
- * © OpenCORD
- *
- * Visit http://guide.xosproject.org/devguide/addview/ for more information
- *
- * Created by teone on 3/24/16.
- */
-
-(function () {
-  'use strict';
-
-  angular.module('xos.uiComponents')
-  /**
-    * @ngdoc directive
-    * @name xos.uiComponents.directive:xosSmartPie
-    * @restrict E
-    * @description The xos-table directive
-    * @param {Object} config The configuration for the component,
-    * it is composed by the name of an angular [$resource](https://docs.angularjs.org/api/ngResource/service/$resource)
-    * and a field name that is used to group the data.
-    * ```
-    * {
-        resource: 'Users',
-        groupBy: 'fieldName',
-        classes: 'my-custom-class',
-        labelFormatter: (labels) => {
-          // here you can format your label,
-          // you should return an array with the same order
-          return labels;
-        }
-      }
-    * ```
-    * @scope
-    * @example
-    
-    Displaying Local data
-     <example module="sampleSmartPieLocal">
-      <file name="index.html">
-        <div ng-controller="SampleCtrlLocal as vm">
-          <xos-smart-pie config="vm.configLocal"></xos-smart-pie>
-        </div>
-      </file>
-      <file name="script.js">
-        angular.module('sampleSmartPieLocal', ['xos.uiComponents'])
-        .factory('_', function($window){
-          return $window._;
-        })
-        .controller('SampleCtrlLocal', function($timeout){
-          
-          this.datas = [
-            {id: 1, first_name: 'Jon', last_name: 'aaa', category: 2},
-            {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 1},
-            {id: 3, first_name: 'Aria', last_name: 'Stark', category: 2}
-          ];
-           this.configLocal = {
-            data: [],
-            groupBy: 'category',
-            classes: 'local',
-            labelFormatter: (labels) => {
-              return labels.map(l => l === '1' ? 'North' : 'Dragon');
-            }
-          };
-          
-          $timeout(() => {
-            // this need to be triggered in this way just because of ngDoc,
-            // otherwise you can assign data directly in the config
-            this.configLocal.data = this.datas;
-          }, 1)
-        });
-      </file>
-    </example>
-     Fetching data from API
-     <example module="sampleSmartPieResource">
-      <file name="index.html">
-        <div ng-controller="SampleCtrl as vm">
-          <xos-smart-pie config="vm.config"></xos-smart-pie>
-        </div>
-      </file>
-      <file name="script.js">
-        angular.module('sampleSmartPieResource', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
-        .controller('SampleCtrl', function(){
-          this.config = {
-            resource: 'SampleResource',
-            groupBy: 'category',
-            classes: 'resource',
-            labelFormatter: (labels) => {
-              return labels.map(l => l === '1' ? 'North' : 'Dragon');
-            }
-          };
-        });
-      </file>
-      <file name="backendPoll.js">
-        angular.module('sampleSmartPieResource')
-        .run(function($httpBackend, _){
-          let datas = [
-            {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
-            {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
-            {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1}
-          ];
-           $httpBackend.whenGET('/test').respond(200, datas)
-        })
-        .factory('_', function($window){
-          return $window._;
-        })
-        .service('SampleResource', function($resource){
-          return $resource('/test/:id', {id: '@id'});
-        })
-      </file>
-    </example>
-     Polling data from API
-     <example module="sampleSmartPiePoll">
-      <file name="index.html">
-        <div ng-controller="SampleCtrl as vm">
-          <xos-smart-pie config="vm.config"></xos-smart-pie>
-        </div>
-      </file>
-      <file name="script.js">
-        angular.module('sampleSmartPiePoll', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
-        .controller('SampleCtrl', function(){
-          this.config = {
-            resource: 'SampleResource',
-            groupBy: 'category',
-            poll: 2,
-            labelFormatter: (labels) => {
-              return labels.map(l => l === '1' ? 'Active' : 'Banned');
-            }
-          };
-        });
-      </file>
-      <file name="backend.js">
-        angular.module('sampleSmartPiePoll')
-        .run(function($httpBackend, _){
-          let mock = [
-            [
-              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
-              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
-              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1},
-              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 1}
-            ],
-             [
-              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
-              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
-              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 2},
-              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 2}
-            ],
-             [
-              {id: 1, first_name: 'Jon', last_name: 'Snow', category: 1},
-              {id: 2, first_name: 'Danaerys', last_name: 'Targaryen', category: 2},
-              {id: 3, first_name: 'Aria', last_name: 'Stark', category: 1},
-              {id: 3, first_name: 'Tyrion', last_name: 'Lannister', category: 2}
-            ]
-          ];
-          $httpBackend.whenGET('/test').respond(function(method, url, data, headers, params) {
-            return [200, mock[Math.round(Math.random() * 3)]];
-          });
-        })
-        .factory('_', function($window){
-          return $window._;
-        })
-        .service('SampleResource', function($resource){
-          return $resource('/test/:id', {id: '@id'});
-        })
-      </file>
-    </example>
-    */
-  .directive('xosSmartPie', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        config: '='
-      },
-      template: '\n        <canvas\n          class="chart chart-pie {{vm.config.classes}}"\n          chart-data="vm.data" chart-labels="vm.labels"\n          chart-legend="{{vm.config.legend}}">\n        </canvas>\n      ',
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["$injector", "$interval", "$scope", "$timeout", "_", function controller($injector, $interval, $scope, $timeout, _) {
-        var _this = this;
-
-        if (!this.config.resource && !this.config.data) {
-          throw new Error('[xosSmartPie] Please provide a resource or an array of data in the configuration');
-        }
-
-        var groupData = function groupData(data) {
-          return _.groupBy(data, _this.config.groupBy);
-        };
-        var formatData = function formatData(data) {
-          return _.reduce(Object.keys(data), function (list, group) {
-            return list.concat(data[group].length);
-          }, []);
-        };
-        var formatLabels = function formatLabels(data) {
-          return angular.isFunction(_this.config.labelFormatter) ? _this.config.labelFormatter(Object.keys(data)) : Object.keys(data);
-        };
-
-        var prepareData = function prepareData(data) {
-          // group data
-          var grouped = groupData(data);
-          _this.data = formatData(grouped);
-          // create labels
-          _this.labels = formatLabels(grouped);
-        };
-
-        if (this.config.resource) {
-          (function () {
-
-            _this.Resource = $injector.get(_this.config.resource);
-            var getData = function getData() {
-              _this.Resource.query().$promise.then(function (res) {
-
-                if (!res[0]) {
-                  return;
-                }
-
-                prepareData(res);
-              });
-            };
-
-            getData();
-
-            if (_this.config.poll) {
-              $interval(function () {
-                getData();
-              }, _this.config.poll * 1000);
-            }
-          })();
-        } else {
-          $scope.$watch(function () {
-            return _this.config.data;
-          }, function (data) {
-            if (data) {
-              prepareData(_this.config.data);
-            }
-          }, true);
-        }
-
-        $scope.$on('create', function (event, chart) {
-          console.log('create: ' + chart.id);
-        });
-
-        $scope.$on('destroy', function (event, chart) {
-          console.log('destroy: ' + chart.id);
-        });
-      }]
-    };
-  });
-})();
-//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartPie/smartPie.component.js.map
-
-'use strict';
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-/**
- * © OpenCORD
- *
- * Visit http://guide.xosproject.org/devguide/addview/ for more information
- *
- * Created by teone on 3/24/16.
- */
-
-(function () {
-  'use strict';
-
-  angular.module('xos.uiComponents')
-
-  /**
-  * @ngdoc directive
-  * @name xos.uiComponents.directive:xosSmartTable
-  * @link xos.uiComponents.directive:xosTable xosTable
-  * @link xos.uiComponents.directive:xosForm xosForm
-  * @restrict E
-  * @description The xos-table directive
-  * @param {Object} config The configuration for the component,
-  * it is composed by the name of an angular [$resource](https://docs.angularjs.org/api/ngResource/service/$resource)
-  * and an array of fields that shouldn't be printed.
-  * ```
-  * {
-      resource: 'Users',
-      hiddenFields: []
-    }
-  * ```
-  * @scope
-  * @example
-   <example module="sampleSmartTable">
-    <file name="index.html">
-      <div ng-controller="SampleCtrl as vm">
-        <xos-smart-table config="vm.config"></xos-smart-table>
-      </div>
-    </file>
-    <file name="script.js">
-      angular.module('sampleSmartTable', ['xos.uiComponents', 'ngResource', 'ngMockE2E'])
-      // This is only for documentation purpose
-      .run(function($httpBackend, _){
-        let datas = [{id: 1, name: 'Jhon', surname: 'Doe'}];
-        let count = 1;
-         let paramsUrl = new RegExp(/\/test\/(.+)/);
-         $httpBackend.whenDELETE(paramsUrl, undefined, ['id']).respond((method, url, data, headers, params) => {
-          data = angular.fromJson(data);
-          let id = url.match(paramsUrl)[1];
-          _.remove(datas, (d) => {
-            return d.id === parseInt(id);
-          })
-          return [204];
-        });
-         $httpBackend.whenGET('/test').respond(200, datas)
-        $httpBackend.whenPOST('/test').respond((method, url, data) => {
-          data = angular.fromJson(data);
-          data.id = ++count;
-          datas.push(data);
-          return [201, data, {}];
-        });
-      })
-      .factory('_', function($window){
-        return $window._;
-      })
-      .service('SampleResource', function($resource){
-        return $resource('/test/:id', {id: '@id'});
-      })
-      // End of documentation purpose, example start
-      .controller('SampleCtrl', function(){
-        this.config = {
-          resource: 'SampleResource'
-        };
-      });
-    </file>
-  </example>
-  */
-
-  .directive('xosSmartTable', function () {
-    return {
-      restrict: 'E',
-      scope: {
-        config: '='
-      },
-      template: '\n        <div class="row" ng-show="vm.data.length > 0">\n          <div class="col-xs-12 text-right">\n            <a href="" class="btn btn-success" ng-click="vm.createItem()">\n              Add\n            </a>\n          </div>\n        </div>\n        <div class="row">\n          <div class="col-xs-12 table-responsive">\n            <xos-table config="vm.tableConfig" data="vm.data"></xos-table>\n          </div>\n        </div>\n        <div class="panel panel-default" ng-show="vm.detailedItem">\n          <div class="panel-heading">\n            <div class="row">\n              <div class="col-xs-11">\n                <h3 class="panel-title" ng-show="vm.detailedItem.id">Update {{vm.config.resource}} {{vm.detailedItem.id}}</h3>\n                <h3 class="panel-title" ng-show="!vm.detailedItem.id">Create {{vm.config.resource}} item</h3>\n              </div>\n              <div class="col-xs-1">\n                <a href="" ng-click="vm.cleanForm()">\n                  <i class="glyphicon glyphicon-remove pull-right"></i>\n                </a>\n              </div>\n            </div>\n          </div>\n          <div class="panel-body">\n            <xos-form config="vm.formConfig" ng-model="vm.detailedItem"></xos-form>\n          </div>\n        </div>\n        <xos-alert config="{type: \'success\', closeBtn: true}" show="vm.responseMsg">{{vm.responseMsg}}</xos-alert>\n        <xos-alert config="{type: \'danger\', closeBtn: true}" show="vm.responseErr">{{vm.responseErr}}</xos-alert>\n      ',
-      bindToController: true,
-      controllerAs: 'vm',
-      controller: ["$injector", "LabelFormatter", "_", "XosFormHelpers", function controller($injector, LabelFormatter, _, XosFormHelpers) {
-        var _this = this;
-
-        // TODO
-        // - Validate the config (what if resource does not exist?)
-
-        // NOTE
-        // Corner case
-        // - if response is empty, how can we generate a form ?
-
-        this.responseMsg = false;
-        this.responseErr = false;
-
-        this.tableConfig = {
-          columns: [],
-          actions: [{
-            label: 'delete',
-            icon: 'remove',
-            cb: function cb(item) {
-              _this.Resource.delete({ id: item.id }).$promise.then(function () {
-                _.remove(_this.data, function (d) {
-                  return d.id === item.id;
-                });
-                _this.responseMsg = _this.config.resource + ' with id ' + item.id + ' successfully deleted';
-              }).catch(function (err) {
-                _this.responseErr = err.data.detail || 'Error while deleting ' + _this.config.resource + ' with id ' + item.id;
-              });
-            },
-            color: 'red'
-          }, {
-            label: 'details',
-            icon: 'search',
-            cb: function cb(item) {
-              _this.detailedItem = item;
-            }
-          }],
-          classes: 'table table-striped table-bordered table-responsive',
-          filter: 'field',
-          order: true,
-          pagination: {
-            pageSize: 10
-          }
-        };
-
-        this.formConfig = {
-          exclude: this.config.hiddenFields,
-          fields: {},
-          formName: this.config.resource + 'Form',
-          actions: [{
-            label: 'Save',
-            icon: 'ok',
-            cb: function cb(item) {
-              var p = void 0;
-              var isNew = true;
-
-              if (item.id) {
-                p = item.$update();
-                isNew = false;
-              } else {
-                p = item.$save();
-              }
-
-              p.then(function (res) {
-                if (isNew) {
-                  _this.data.push(angular.copy(res));
-                }
-                delete _this.detailedItem;
-                _this.responseMsg = _this.config.resource + ' with id ' + item.id + ' successfully saved';
-              }).catch(function (err) {
-                _this.responseErr = err.data.detail || 'Error while saving ' + _this.config.resource + ' with id ' + item.id;
-              });
-            },
-            class: 'success'
-          }]
-        };
-
-        this.cleanForm = function () {
-          delete _this.detailedItem;
-        };
-
-        this.createItem = function () {
-          _this.detailedItem = new _this.Resource();
-        };
-
-        this.Resource = $injector.get(this.config.resource);
-
-        var getData = function getData() {
-          _this.Resource.query().$promise.then(function (res) {
-
-            if (!res[0]) {
-              _this.data = res;
-              return;
-            }
-
-            var item = res[0];
-            var props = Object.keys(item);
-
-            _.remove(props, function (p) {
-              return p === 'id' || p === 'validators';
-            });
-
-            // TODO move out cb,  non sense triggering a lot of times
-            if (angular.isArray(_this.config.hiddenFields)) {
-              props = _.difference(props, _this.config.hiddenFields);
-            }
-
-            var labels = props.map(function (p) {
-              return LabelFormatter.format(p);
-            });
-
-            props.forEach(function (p, i) {
-              var fieldConfig = {
-                label: labels[i],
-                prop: p
-              };
-
-              if (angular.isString(item[p]) && typeof item[p] !== 'undefined') {
-                fieldConfig.type = _typeof(item[p]);
-              }
-
-              _this.tableConfig.columns.push(fieldConfig);
-            });
-
-            // build form structure
-            // TODO move in a pure function for testing purposes
-            props.forEach(function (p, i) {
-              _this.formConfig.fields[p] = {
-                label: LabelFormatter.format(labels[i]).replace(':', ''),
-                type: XosFormHelpers._getFieldFormat(item[p])
-              };
-            });
-
-            _this.data = res;
-          });
-        };
-
-        getData();
-      }]
-    };
-  });
-})();
-//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartTable/smartTable.component.js.map
 
 'use strict';
 
