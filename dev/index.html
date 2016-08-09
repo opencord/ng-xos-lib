@@ -13,9 +13,9 @@
 </head>
 <body style="padding-top: 50px">
   <div ng-app="ngXosLib" class="container">
-    <div ng-controller="testCtrl as vm">
-      <xos-form ng-model="vm.model" config="vm.config"></xos-form>
-    </div>
+    <nav-demo></nav-demo>
+
+    <div ui-view></div>
   </div>
   <!-- bower:js -->
   <script src="../bower_components/angular/angular.js"></script>
@@ -36,8 +36,8 @@
   <script src="/ui_components/dumbComponents/validation/validation.component.js"></script>
   <script src="/ui_components/dumbComponents/table/table.component.js"></script>
   <script src="/ui_components/dumbComponents/pagination/pagination.component.js"></script>
-  <script src="/ui_components/dumbComponents/form/form.component.js"></script>
   <script src="/ui_components/dumbComponents/field/field.component.js"></script>
+  <script src="/ui_components/dumbComponents/form/form.component.js"></script>
   <script src="/ui_components/dumbComponents/alert/alert.component.js"></script>
   <script src="/services/helpers/ui/label_formatter.service.js"></script>
   <script src="/services/helpers/ui/form.helpers.js"></script>
@@ -74,6 +74,11 @@
   <script src="/services/csrfToken.interceptor.js"></script>
   <script src="/index.ngdoc.js"></script>
   <!-- endinject -->
-  <script src="main.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/form.dev.js"></script>
+  <script src="js/field.dev.js"></script>
+  <script src="js/alert.dev.js"></script>
+  <script src="js/table.dev.js"></script>
+
 </body>
 </html>
