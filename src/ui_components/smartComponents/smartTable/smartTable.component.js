@@ -233,17 +233,13 @@
               props = _.difference(props, this.config.hiddenFields)
             }
 
-            let labels = props.map(p => LabelFormatter.format(p));
-
-            props.forEach((p, i) => {
+            props.forEach(p => {
               let fieldConfig = {
-                label: labels[i],
+                label: LabelFormatter.format(p),
                 prop: p
               };
 
-              if(angular.isString(item[p]) && typeof item[p] !== 'undefined'){
-                fieldConfig.type = typeof item[p];
-              }
+              fieldConfig.type = XosFormHelpers._getFieldFormat(item[p]);
 
               this.tableConfig.columns.push(fieldConfig);
             });
@@ -252,11 +248,10 @@
             // TODO move in a pure function for testing purposes
             props.forEach((p, i) => {
               this.formConfig.fields[p] = {
-                label: LabelFormatter.format(labels[i]).replace(':', ''),
+                label: LabelFormatter.format(p).replace(':', ''),
                 type: XosFormHelpers._getFieldFormat(item[p])
               };
             });
-
             this.data = res;
           });
         }

@@ -40,6 +40,14 @@ angular.module('ngXosLib')
               minlength: 10
             }
           },
+          select: {
+            label: 'select',
+            type: 'select',
+            options: [
+              {id: 1, label: 'a'},
+              {id: 2, label: 'b'}
+            ]
+          },
           details_field: {
             label: 'Empty Object Field',
             type: 'object',

@@ -1,11 +1,7 @@
 /* eslint-disable angular/ng_module_name */
 (function(){
   'use strict';
-  console.log('hello!');
   angular.module('ngXosLib', ['xos.helpers', 'ui.router'])
-  .run(function () {
-    console.info('Dev Environment ready!')
-  })
   .config(($stateProvider) => {
     $stateProvider
     .state('form-test', {
@@ -24,6 +20,10 @@
       url: '/field/',
       template: '<field-test></field-test>'
     })
+    .state('smart-table-test', {
+      url: '/smartTable/',
+      template: '<smart-table-test></smart-table-test>'
+    })
   })
   .component('navDemo', {
     restrict: 'E',
@@ -35,8 +35,7 @@
 
       this.active = 'form';
 
-      $rootScope.$on('$stateChangeSuccess', (event, toState, toParams, fromState, fromParams)=> {
-
+      $rootScope.$on('$stateChangeSuccess', (event, toState) => {
         let strSelected = toState.url.split('/').join('');
         this.active = strSelected.charAt(0).toUpperCase() + strSelected.slice(1);
       });
@@ -64,7 +63,11 @@
             label: 'Table',
             class: '',
             link: '/#/table/'
-
+          },
+          {
+            label: 'SmartTable',
+            class: '',
+            link: '/#/smartTable/'
           }
         ]
       }

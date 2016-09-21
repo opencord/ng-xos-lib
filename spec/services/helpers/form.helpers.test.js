@@ -116,6 +116,7 @@
 
       describe('the _getFieldFormat method', () => {
         it('should return text', () => {
+          expect(service._getFieldFormat('cordSubscriber-1')).toEqual('text');
           expect(service._getFieldFormat('a random text')).toEqual('text');
           expect(service._getFieldFormat(null)).toEqual('text');
           expect(service._getFieldFormat('1')).toEqual('text');

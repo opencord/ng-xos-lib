@@ -43,7 +43,12 @@
       }
 
       // check if is date
-      if (_.isDate(value) || (!Number.isNaN(Date.parse(value)) && new Date(value).getTime() > 631180800000)){
+      if (
+        angular.isDate(value) ||
+        (
+          !Number.isNaN(Date.parse(value)) && // Date.parse is a number
+          /^\d+-\d+-\d+\D\d+:\d+:\d+\.\d+\D/.test(value) // the format match ISO dates
+        )){
         return 'date';
       }
 
