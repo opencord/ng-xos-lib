@@ -102,10 +102,10 @@
         });
 
         it('should render 10 input field', () => {
-          // boolean are in the form model, but are not input
+          // boolean and arrays are in the form model, but are not input
           expect(Object.keys(isolatedScope.formField).length).toEqual(9);
           const field = element[0].getElementsByTagName('input');
-          expect(field.length).toEqual(10);
+          expect(field.length).toEqual(9);
         });
 
         it('should render 1 boolean field', () => {

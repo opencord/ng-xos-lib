@@ -47,6 +47,26 @@ angular.module('ngXosLib')
             type: 'number'
           }
         }
+      };
+
+      this.selectField = {
+        name: 'select',
+        label: 'Select field:',
+        type: 'select',
+        model: 1,
+        options: [
+          {id: 1, label: 'One'},
+          {id: 2, label: 'Two'},
+          {id: 3, label: 'Three'},
+        ]
       }
+
+      this.arrayField = {
+        name: 'array',
+        label: 'Array field:',
+        model: ['one', 'two', 'three'],
+        type: 'array',
+        options: ['one', 'two', 'three', 'four']
+      };
     }
   });

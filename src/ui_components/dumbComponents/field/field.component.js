@@ -82,6 +82,18 @@
               field: {label: 'My Email Value:', type: 'email'},
               model: 'sample@domain.us'
             };
+
+            this.field5 = {
+              name: 'select',
+              label: 'Select field:',
+              type: 'select',
+              model: 1,
+              options: [
+                {id: 1, label: 'One'},
+                {id: 2, label: 'Two'},
+                {id: 3, label: 'Three'},
+              ]
+            };
           });
         </file>
         <file name="index.html">
@@ -90,6 +102,7 @@
             <xos-field ng-model="vm.field2.model" name="vm.field2.name" field="vm.field2.field"></xos-field>
             <xos-field ng-model="vm.field3.model" name="vm.field3.name" field="vm.field3.field"></xos-field>
             <xos-field ng-model="vm.field4.model" name="vm.field4.name" field="vm.field4.field"></xos-field>
+            <xos-field ng-model="vm.field5.model" name="vm.field5.name" field="vm.field5.field"></xos-field>
           </div>
         </file>
       </example>
@@ -150,71 +163,106 @@
       ngModel: '='
     },
     template: `
-      <label ng-if="vm.field.type !== 'object'">{{vm.field.label}}</label>
-          <input
-            xos-custom-validator custom-validator="vm.field.validators.custom || null"
-            ng-if="vm.field.type !== 'boolean' && vm.field.type !== 'object' && vm.field.type !== 'select'"
-            type="{{vm.field.type}}"
-            name="{{vm.name}}"
-            class="form-control"
-            ng-model="vm.ngModel"
-            ng-minlength="vm.field.validators.minlength || 0"
-            ng-maxlength="vm.field.validators.maxlength || 2000"
-            ng-required="vm.field.validators.required || false" />
-            <select class="form-control" ng-if ="vm.field.type === 'select'"
-              name = "{{vm.name}}"
-              ng-options="item.id as item.label for item in vm.field.options"
-              ng-model="vm.ngModel"
-              ng-required="vm.field.validators.required || false">
-              </select>
-          <span class="boolean-field" ng-if="vm.field.type === 'boolean'">
-            <a href="#"
-              class="btn btn-success"
-              ng-show="vm.ngModel"
-              ng-click="vm.ngModel = false">
-              <i class="glyphicon glyphicon-ok"></i>
-            </a>
-            <a href="#"
-              class="btn btn-danger"
-              ng-show="!vm.ngModel"
-              ng-click="vm.ngModel = true">
-              <i class="glyphicon glyphicon-remove"></i>
-            </a>
-          </span>
-          <div
-            class="panel panel-default object-field"
-            ng-if="vm.field.type == 'object' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"
-            >
-            <div class="panel-heading">{{vm.field.label}}</div>
-            <div class="panel-body">
-              <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">
-                <xos-field
-                  name="k"
-                  field="{label: vm.formatLabel(k), type: vm.getType(v)}"
-                  ng-model="v">
-                </xos-field>
-              </div>
-              <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">
-                <xos-field
-                  name="k"
-                  field="{
-                    label: v.label || vm.formatLabel(k),
-                    type: v.type,
-                    validators: v.validators
-                  }"
-                  ng-model="vm.ngModel[k]">
-                </xos-field>
-              </div>
-            </div>
+      <label ng-if="vm.field.type !== 'object' && vm.field.type !== 'array'">{{vm.field.label}}</label>
+      <input
+        xos-custom-validator custom-validator="vm.field.validators.custom || null"
+        ng-if="vm.field.type !== 'boolean' && vm.field.type !== 'object' && vm.field.type !== 'select' && vm.field.type !== 'array'"
+        type="{{vm.field.type}}"
+        name="{{vm.name}}"
+        class="form-control"
+        ng-model="vm.ngModel"
+        ng-minlength="vm.field.validators.minlength || 0"
+        ng-maxlength="vm.field.validators.maxlength || 2000"
+        ng-required="vm.field.validators.required || false" />
+        <select class="form-control" ng-if ="vm.field.type === 'select'"
+          name = "{{vm.name}}"
+          ng-options="item.id as item.label for item in vm.field.options"
+          ng-model="vm.ngModel"
+          ng-required="vm.field.validators.required || false">
+          </select>
+      <span class="boolean-field" ng-if="vm.field.type === 'boolean'">
+        <a href="#"
+          class="btn btn-success"
+          ng-show="vm.ngModel"
+          ng-click="vm.ngModel = false">
+          <i class="glyphicon glyphicon-ok"></i>
+        </a>
+        <a href="#"
+          class="btn btn-danger"
+          ng-show="!vm.ngModel"
+          ng-click="vm.ngModel = true">
+          <i class="glyphicon glyphicon-remove"></i>
+        </a>
+      </span>
+      <div
+        class="panel panel-default object-field"
+        ng-if="vm.field.type == 'object' && (!vm.isEmptyObject(vm.ngModel) || !vm.isEmptyObject(vm.field.properties))"
+        >
+        <div class="panel-heading">{{vm.field.label}}</div>
+        <div class="panel-body">
+          <div ng-if="!vm.field.properties" ng-repeat="(k, v) in vm.ngModel">
+            <xos-field
+              name="k"
+              field="{label: vm.formatLabel(k), type: vm.getType(v)}"
+              ng-model="v">
+            </xos-field>
           </div>
+          <div ng-if="vm.field.properties" ng-repeat="(k, v) in vm.field.properties">
+            <xos-field
+              name="k"
+              field="{
+                label: v.label || vm.formatLabel(k),
+                type: v.type,
+                validators: v.validators
+              }"
+              ng-model="vm.ngModel[k]">
+            </xos-field>
+          </div>
+        </div>
+      </div>
+      <div
+        class="panel panel-default array-field"
+        ng-if="vm.field.type == 'array'">
+        <div class="panel-heading">{{vm.field.label}}</div>
+        <div class="panel-body selected">
+          <ul class="draggable" dnd-list="vm.ngModel">
+            <li
+              class="array-element"
+              ng-repeat="item in vm.ngModel"
+              dnd-draggable="item"
+              dnd-moved="vm.ngModel.splice($index, 1)"
+              dnd-effect-allowed="move"
+              dnd-selected="models.selected = item"
+              >
+              <div class="well well-sm text-center">
+                {{item}}
+              </div>
+            </li>
+            <div class="clearfix"></div>
+          </ul>
+        </div>
+        <div class="panel-body unselected">
+          <ul class="draggable" dnd-list="vm.field.availableOptions">
+            <li
+              class="array-element"
+              ng-repeat="item in vm.field.availableOptions"
+              dnd-draggable="item"
+              dnd-moved="vm.field.availableOptions.splice($index, 1)"
+              dnd-effect-allowed="move"
+              dnd-selected="models.selected = item"
+              >
+              <div class="well well-sm text-center">
+                {{item}}
+              </div>
+            </li>
+            <div class="clearfix"></div>
+          </ul>
+        </div>
+      </div>
     `,
     bindToController: true,
     controllerAs: 'vm',
-    // the compile cicle is needed to support recursion
-    //compile: function (element) {
-    //  return RecursionHelper.compile(element);
-    //},
-    controller: function($attrs, XosFormHelpers, LabelFormatter){
+    controller: function($attrs, $scope, XosFormHelpers, LabelFormatter, _){
 
       if(!this.name){
         throw new Error('[xosField] Please provide a field name');
@@ -232,6 +280,13 @@
       this.formatLabel = LabelFormatter.format;
 
       this.isEmptyObject = o => o ? Object.keys(o).length === 0 : true;
+
+      if(this.field.type === 'array'){
+        $scope.$watch(() => this.ngModel.length, () => {
+          this.field.availableOptions = _.difference(this.field.options, this.ngModel);
+        });
+      }
+
     }
   })
 

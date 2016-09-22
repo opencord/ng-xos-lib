@@ -273,6 +273,49 @@
         });
       });
 
+      describe('when an array input is passed', () => {
+        beforeEach(() => {
+          scope = rootScope.$new();
+          scope.name = 'label';
+          scope.field = {
+            label: 'Label',
+            type: 'array',
+            validators: {},
+            options: ['1', '2', '3', '4', '5']
+          };
+          scope.ngModel = ['1', '2', '3'];
+          compileElement();
+        });
+
+        it('should print a panel to contain array values', () => {
+          expect($(element).find('.panel.array-field')).toExist()
+        });
+
+        it('should print selected values', () => {
+          expect($(element).find('.panel.array-field .selected .array-element')).toHaveLength(3)
+        });
+
+        it('should print un-selected values', () => {
+          expect($(element).find('.panel.array-field .unselected .array-element')).toHaveLength(2)
+        });
+
+        describe('when a value is added', () => {
+          it('should be removed from unselected', () => {
+            isolatedScope.ngModel.push('4');
+            scope.$apply();
+            expect($(element).find('.panel.array-field .unselected .array-element')).toHaveLength(1)
+          });
+        });
+
+        describe('when a value is removed', () => {
+          it('should be added to unselected', () => {
+            isolatedScope.ngModel.pop();
+            scope.$apply();
+            expect($(element).find('.panel.array-field .unselected .array-element')).toHaveLength(3)
+          });
+        });
+      });
+
       describe('when validation options are passed', () => {
         let input;
         describe('given a a text field', () => {
