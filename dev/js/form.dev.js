@@ -25,6 +25,7 @@ angular.module('ngXosLib')
             class: 'success'
           }
         ],
+        order: ['last_name', 'select'],
         fields: {
           first_name: {
             type: 'string',

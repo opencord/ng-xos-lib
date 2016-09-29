@@ -1,5 +1,5 @@
 (function () {
-  
+
   angular.module('xos.uiComponents')
 
   /**
@@ -93,14 +93,22 @@
     * ```
     **/
 
-    this.buildFormStructure = (modelField, customField, model) => {
+    this.buildFormStructure = (modelField, customField, model, order) => {
+
+      const orderedForm = {};
 
       modelField = angular.extend(modelField, customField);
       customField = customField || {};
 
-      return _.reduce(Object.keys(modelField), (form, f) => {
+      if (order) {
+        _.each(order, function (key) {
+          orderedForm[key] = {};
+        });
+      }
 
-        form[f] = {
+      _.each(Object.keys(modelField), (f) => {
+
+        orderedForm[f] = {
           label: (customField[f] && customField[f].label) ? `${customField[f].label}:` : LabelFormatter.format(f),
           type: (customField[f] && customField[f].type) ? customField[f].type : this._getFieldFormat(model[f]),
           validators: (customField[f] && customField[f].validators) ? customField[f].validators : {},
@@ -108,21 +116,21 @@
         };
 
         if(customField[f] && customField[f].options){
-          form[f].options = customField[f].options;
+          orderedForm[f].options = customField[f].options;
         }
         if(customField[f] && customField[f].properties){
-          form[f].properties = customField[f].properties;
+          orderedForm[f].properties = customField[f].properties;
         }
-        if(form[f].type === 'date'){
+        if(orderedForm[f].type === 'date'){
           model[f] = new Date(model[f]);
         }
 
-        if(form[f].type === 'number'){
+        if(orderedForm[f].type === 'number'){
           model[f] = parseInt(model[f], 10);
         }
+      });
 
-        return form;
-      }, {});
+      return orderedForm;
     };
 
     /**

@@ -50,7 +50,7 @@
       });
 
       describe('when correctly configured', () => {
-        
+
         let cb = jasmine.createSpy('callback');
 
         beforeEach(inject(($rootScope) => {
@@ -68,6 +68,7 @@
                 class: 'success'
               }
             ],
+            order: ['first_name', 'age', 'last_name'],
             fields: {
               first_name: {
                 label: 'Custom Label'
@@ -131,6 +132,12 @@
           expect($(element).find('[name="age"]')).toHaveAttr('type', 'number');
           expect($(element).find('[name="birthDate"]')).toHaveAttr('type', 'date');
           expect($(element).find('[name="email"]')).toHaveAttr('type', 'email');
+        });
+
+        it('should be in order', () => {
+          expect(Object.keys(isolatedScope.formField)[0]).toEqual('first_name');
+          expect(Object.keys(isolatedScope.formField)[1]).toEqual('age');
+          expect(Object.keys(isolatedScope.formField)[2]).toEqual('last_name');
         });
 
         xdescribe('the boolean field test', () => {
