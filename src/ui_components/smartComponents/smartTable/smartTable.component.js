@@ -78,7 +78,7 @@
     </example>
     */
    
-  .component('xosSmartTable', {
+    .component('xosSmartTable', {
       restrict: 'E',
       bindings: {
         config: '='
@@ -246,7 +246,7 @@
 
             // build form structure
             // TODO move in a pure function for testing purposes
-            props.forEach((p, i) => {
+            props.forEach((p) => {
               this.formConfig.fields[p] = {
                 label: LabelFormatter.format(p).replace(':', ''),
                 type: XosFormHelpers._getFieldFormat(item[p])
@@ -258,5 +258,5 @@
 
         getData();
       }
-  });
+    });
 })();

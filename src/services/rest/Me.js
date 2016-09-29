@@ -7,7 +7,7 @@
   * @name xos.helpers.Me
   * @description Http read-only api to fetch /api/utility/me/
   **/
-  .service('Me', function($q,$http){
+  .service('Me', function($q, $http){
 
     this.get = () => {
       let deferred = $q.defer();

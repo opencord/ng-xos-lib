@@ -62,7 +62,7 @@
     * - _formatByUppercase
     * - _capitalize
     * - replace multiple space with a single one
-    * - append `:` at the end 
+    * - append `:` at the end
     * <br/>
     * Eg: `this_string` will became `This string:`<br/>
     * Eg: `thisString` will became `This string:`
