@@ -1,6 +1,6 @@
 {
   "name": "ng-xos-lib",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Angular Version of XosLib, containing Helpers and ngResources",
   "main": "index.js",
   "scripts": {
