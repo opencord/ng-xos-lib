@@ -85,14 +85,26 @@
 
             this.field5 = {
               name: 'select',
-              label: 'Select field:',
-              type: 'select',
-              model: 1,
-              options: [
-                {id: 1, label: 'One'},
-                {id: 2, label: 'Two'},
-                {id: 3, label: 'Three'},
-              ]
+              field: {
+                label: 'Select field:',
+                type: 'select',
+                options: [
+                  {id: 1, label: 'One'},
+                  {id: 2, label: 'Two'},
+                  {id: 3, label: 'Three'},
+                ]
+              },
+              model: 1
+            };
+
+            this.arrayField = {
+              name: 'array',
+              field: {
+                label: 'Array field:',
+                type: 'array',
+                options: ['one', 'two', 'three', 'four']
+              },
+              model: ['one', 'two'],
             };
           });
         </file>
@@ -103,6 +115,7 @@
             <xos-field ng-model="vm.field3.model" name="vm.field3.name" field="vm.field3.field"></xos-field>
             <xos-field ng-model="vm.field4.model" name="vm.field4.name" field="vm.field4.field"></xos-field>
             <xos-field ng-model="vm.field5.model" name="vm.field5.name" field="vm.field5.field"></xos-field>
+            <xos-field ng-model="vm.arrayField.model" name="vm.arrayField.name" field="vm.arrayField.field"></xos-field>
           </div>
         </file>
       </example>

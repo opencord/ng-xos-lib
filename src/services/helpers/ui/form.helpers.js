@@ -94,7 +94,6 @@
     **/
 
     this.buildFormStructure = (modelField, customField, model, order) => {
-
       const orderedForm = {};
 
       modelField = angular.extend(modelField, customField);

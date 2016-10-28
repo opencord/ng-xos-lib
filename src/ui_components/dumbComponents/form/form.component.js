@@ -22,6 +22,7 @@
     * ```
     * {
     *   exclude: ['id', 'validators', 'created', 'updated', 'deleted'], //field to be skipped in the form, the provide values are concatenated
+    *   order: ['field1', 'field2'], // ordering the fields (missing ones are attached at the end)
     *   actions: [ // define the form buttons with related callback
     *     {
             label: 'save',
@@ -56,6 +57,7 @@
     *   }
     * }
     * ```
+    * @param {Object} ngModel The model object (it is mandatory to specify at least an empty object)
     * @element ANY
     * @scope
     * @requires xos.uiComponents.directive:xosField
@@ -112,23 +114,21 @@
       })
       .controller('SampleCtrl1', function(SampleResource){
 
-
-        this.model = {
-        };
+        this.model = {};
 
         this.config = {
           exclude: ['password', 'last_login'],
           formName: 'sampleForm1',
           feedback: {
             show: false,
-            message: 'Form submitted successfully !!!',
+            message: 'Form submitted successfully!',
             type: 'success'
           },
           actions: [
             {
               label: 'Save',
-              icon: 'ok', // refers to bootstraps glyphicon
-              cb: (user) => { // receive the model
+              icon: 'ok',
+              cb: (user) => {
                 console.log(user);
                 this.config.feedback.show = true;
                 this.config.feedback.type='success';
@@ -136,6 +136,7 @@
               class: 'success'
             }
           ],
+          order: ['site', 'last_name', 'first_name', 'age'],
           fields: {
             first_name: {
               type: 'string',
@@ -158,29 +159,23 @@
                 min: 21
               }
             },
-
             site: {
-            label: 'Site',
-            type: 'select',
-            validators: { required: true},
-            hint: 'The Site this Slice belongs to',
-            options: []
+              label: 'Site',
+              type: 'select',
+              validators: { required: true},
+              hint: 'The Site this Slice belongs to',
+              options: []
             },
          }
         };
         SampleResource.query().$promise
-          .then((users) => {
-          //this.users_site = users;
-        //console.log(users);
+        .then((users) => {
           this.optionVal = users;
           this.config.fields['site'].options = this.optionVal;
-        //= this.optionVal;
-
-      })
-      .catch((e) => {
-        throw new Error(e);
-      });
-
+        })
+        .catch((e) => {
+          throw new Error(e);
+        });
       });
     </file>
    <file name="backend.js">
@@ -193,7 +188,6 @@
       .service('SampleResource', function($resource){
         return $resource('/test/:id', {id: '@id'});
       });
-
     </file>
     <file name="index.html">
       <div ng-controller="SampleCtrl1 as vm">
@@ -264,7 +258,7 @@
         }
         let diff = _.difference(Object.keys(this.ngModel), this.excludedField);
         let modelField = XosFormHelpers.parseModelField(diff);
-        this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, this.ngModel);
+        this.formField = XosFormHelpers.buildFormStructure(modelField, this.config.fields, this.ngModel, this.config.order);
       }, true);
 
       $scope.$watch(() => this.ngModel, (model) => {

@@ -28,8 +28,6 @@
 
   angular.module('xos.uiComponents', ['chart.js', 'RecursionHelper', 'dndLists']);
 })();
-//# sourceMappingURL=../maps/ui_components/ui-components.module.js.map
-
 'use strict';
 
 /**
@@ -249,8 +247,6 @@
     }]
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartTable/smartTable.component.js.map
-
 'use strict';
 
 /**
@@ -496,8 +492,6 @@
     }]
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/smartComponents/smartPie/smartPie.component.js.map
-
 'use strict';
 
 /**
@@ -592,8 +586,6 @@
     }
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/validation/validation.component.js.map
-
 'use strict';
 
 /**
@@ -1024,8 +1016,6 @@
     };
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/table/table.component.js.map
-
 'use strict';
 
 /**
@@ -1051,6 +1041,7 @@
     * ```
     * {
     *   exclude: ['id', 'validators', 'created', 'updated', 'deleted'], //field to be skipped in the form, the provide values are concatenated
+    *   order: ['field1', 'field2'], // ordering the fields (missing ones are attached at the end)
     *   actions: [ // define the form buttons with related callback
     *     {
             label: 'save',
@@ -1085,6 +1076,7 @@
     *   }
     * }
     * ```
+    * @param {Object} ngModel The model object (it is mandatory to specify at least an empty object)
     * @element ANY
     * @scope
     * @requires xos.uiComponents.directive:xosField
@@ -1136,21 +1128,20 @@
         return $window._;
       })
       .controller('SampleCtrl1', function(SampleResource){
-          this.model = {
-        };
+         this.model = {};
          this.config = {
           exclude: ['password', 'last_login'],
           formName: 'sampleForm1',
           feedback: {
             show: false,
-            message: 'Form submitted successfully !!!',
+            message: 'Form submitted successfully!',
             type: 'success'
           },
           actions: [
             {
               label: 'Save',
-              icon: 'ok', // refers to bootstraps glyphicon
-              cb: (user) => { // receive the model
+              icon: 'ok',
+              cb: (user) => {
                 console.log(user);
                 this.config.feedback.show = true;
                 this.config.feedback.type='success';
@@ -1158,6 +1149,7 @@
               class: 'success'
             }
           ],
+          order: ['site', 'last_name', 'first_name', 'age'],
           fields: {
             first_name: {
               type: 'string',
@@ -1180,27 +1172,24 @@
                 min: 21
               }
             },
-             site: {
-            label: 'Site',
-            type: 'select',
-            validators: { required: true},
-            hint: 'The Site this Slice belongs to',
-            options: []
+            site: {
+              label: 'Site',
+              type: 'select',
+              validators: { required: true},
+              hint: 'The Site this Slice belongs to',
+              options: []
             },
          }
         };
         SampleResource.query().$promise
-          .then((users) => {
-          //this.users_site = users;
-        //console.log(users);
+        .then((users) => {
           this.optionVal = users;
           this.config.fields['site'].options = this.optionVal;
-        //= this.optionVal;
-       })
-      .catch((e) => {
-        throw new Error(e);
+        })
+        .catch((e) => {
+          throw new Error(e);
+        });
       });
-       });
     </file>
    <file name="backend.js">
      angular.module('sampleForm1')
@@ -1212,7 +1201,7 @@
       .service('SampleResource', function($resource){
         return $resource('/test/:id', {id: '@id'});
       });
-     </file>
+    </file>
     <file name="index.html">
       <div ng-controller="SampleCtrl1 as vm">
         <xos-form ng-model="vm.model" config="vm.config"></xos-form>
@@ -1264,7 +1253,7 @@
         }
         var diff = _.difference(Object.keys(_this.ngModel), _this.excludedField);
         var modelField = XosFormHelpers.parseModelField(diff);
-        _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, _this.ngModel);
+        _this.formField = XosFormHelpers.buildFormStructure(modelField, _this.config.fields, _this.ngModel, _this.config.order);
       }, true);
 
       $scope.$watch(function () {
@@ -1282,8 +1271,6 @@
     }]
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/form/form.component.js.map
-
 'use strict';
 
 /**
@@ -1384,8 +1371,6 @@
     };
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/pagination/pagination.component.js.map
-
 'use strict';
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -1472,14 +1457,25 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             };
              this.field5 = {
               name: 'select',
-              label: 'Select field:',
-              type: 'select',
-              model: 1,
-              options: [
-                {id: 1, label: 'One'},
-                {id: 2, label: 'Two'},
-                {id: 3, label: 'Three'},
-              ]
+              field: {
+                label: 'Select field:',
+                type: 'select',
+                options: [
+                  {id: 1, label: 'One'},
+                  {id: 2, label: 'Two'},
+                  {id: 3, label: 'Three'},
+                ]
+              },
+              model: 1
+            };
+             this.arrayField = {
+              name: 'array',
+              field: {
+                label: 'Array field:',
+                type: 'array',
+                options: ['one', 'two', 'three', 'four']
+              },
+              model: ['one', 'two'],
             };
           });
         </file>
@@ -1490,6 +1486,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             <xos-field ng-model="vm.field3.model" name="vm.field3.name" field="vm.field3.field"></xos-field>
             <xos-field ng-model="vm.field4.model" name="vm.field4.name" field="vm.field4.field"></xos-field>
             <xos-field ng-model="vm.field5.model" name="vm.field5.name" field="vm.field5.field"></xos-field>
+            <xos-field ng-model="vm.arrayField.model" name="vm.arrayField.name" field="vm.arrayField.field"></xos-field>
           </div>
         </file>
       </example>
@@ -1619,8 +1616,6 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
     };
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/field/field.component.js.map
-
 'use strict';
 
 /**
@@ -1756,8 +1751,6 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
     }]
   });
 })();
-//# sourceMappingURL=../../../maps/ui_components/dumbComponents/alert/alert.component.js.map
-
 'use strict';
 
 (function () {
@@ -1856,8 +1849,6 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
     };
   }
 })();
-//# sourceMappingURL=../../../maps/services/helpers/ui/label_formatter.service.js.map
-
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -1956,7 +1947,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     **/
 
     this.buildFormStructure = function (modelField, customField, model, order) {
-
       var orderedForm = {};
 
       modelField = angular.extend(modelField, customField);
@@ -2024,8 +2014,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../../../maps/services/helpers/ui/form.helpers.js.map
-
 'use strict';
 
 (function () {
@@ -2122,8 +2110,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }
 })();
-//# sourceMappingURL=../../../maps/services/helpers/ui/comparator.service.js.map
-
 'use strict';
 
 (function () {
@@ -2165,8 +2151,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     $resourceProvider.defaults.stripTrailingSlashes = false;
   }
 })();
-//# sourceMappingURL=maps/xosHelpers.module.js.map
-
 'use strict';
 
 (function () {
@@ -2182,8 +2166,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return $resource('/api/service/vsg/');
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/vSG.js.map
-
 'use strict';
 
 (function () {
@@ -2201,8 +2183,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/vOLT.js.map
-
 'use strict';
 
 (function () {
@@ -2226,8 +2206,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return $resource('/api/utility/logout/');
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Utility.js.map
-
 'use strict';
 
 (function () {
@@ -2245,8 +2223,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Users.js.map
-
 'use strict';
 
 (function () {
@@ -2264,8 +2240,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Truckroll.js.map
-
 'use strict';
 
 (function () {
@@ -2283,8 +2257,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Tenant.js.map
-
 'use strict';
 
 (function () {
@@ -2434,8 +2406,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Subscribers.js.map
-
 'use strict';
 
 (function () {
@@ -2473,8 +2443,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Slices_plus.js.map
-
 'use strict';
 
 (function () {
@@ -2492,8 +2460,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Slices.js.map
-
 'use strict';
 
 (function () {
@@ -2511,8 +2477,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Sites.js.map
-
 'use strict';
 
 (function () {
@@ -2530,8 +2494,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Services.js.map
-
 'use strict';
 
 (function () {
@@ -2547,8 +2509,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return $resource('/api/service/onos/');
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/ONOS-Services.js.map
-
 'use strict';
 
 (function () {
@@ -2564,8 +2524,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return $resource('/api/tenant/onos/app/');
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/ONOS-Apps.js.map
-
 'use strict';
 
 (function () {
@@ -2583,8 +2541,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Nodes.js.map
-
 'use strict';
 
 (function () {
@@ -2602,8 +2558,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Networkstemplates.js.map
-
 'use strict';
 
 (function () {
@@ -2621,8 +2575,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Networks.js.map
-
 'use strict';
 
 (function () {
@@ -2648,8 +2600,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Me.js.map
-
 'use strict';
 
 (function () {
@@ -2667,8 +2617,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Instances.js.map
-
 'use strict';
 
 (function () {
@@ -2686,8 +2634,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Images.js.map
-
 'use strict';
 
 (function () {
@@ -2705,8 +2651,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Flavors.js.map
-
 'use strict';
 
 (function () {
@@ -2722,8 +2666,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return $resource('/api/service/exampleservice/');
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Example.js.map
-
 'use strict';
 
 (function () {
@@ -2741,8 +2683,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     });
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Deployments.js.map
-
 'use strict';
 
 (function () {
@@ -2774,8 +2714,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return r;
   }]);
 })();
-//# sourceMappingURL=../../maps/services/rest/Dashboards.js.map
-
 'use strict';
 
 (function () {
@@ -2936,8 +2874,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../../maps/services/helpers/user-prefs.service.js.map
-
 'use strict';
 
 (function () {
@@ -2979,8 +2915,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../maps/services/service_graph.service.js.map
-
 'use strict';
 
 /* eslint-disable  angular/ng_window_service*/
@@ -3040,8 +2974,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }]);
 })();
-//# sourceMappingURL=../maps/services/notification.service.js.map
-
 'use strict';
 
 (function () {
@@ -3066,8 +2998,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     };
   }
 })();
-//# sourceMappingURL=../maps/services/noHyperlinks.interceptor.js.map
-
 'use strict';
 
 // TODO write tests for log
@@ -3127,8 +3057,6 @@ angular.module('xos.helpers').config(['$provide', function ($provide) {
     return $delegate;
   }]);
 }]);
-//# sourceMappingURL=../maps/services/log.decorator.js.map
-
 'use strict';
 
 (function () {
@@ -3154,8 +3082,6 @@ angular.module('xos.helpers').config(['$provide', function ($provide) {
     };
   }
 })();
-//# sourceMappingURL=../maps/services/csrfToken.interceptor.js.map
-
 /**
 * @ngdoc overview
 * @name ngXosLib
@@ -3170,4 +3096,3 @@ angular.module('xos.helpers').config(['$provide', function ($provide) {
 * Please report issues at https://jira.opencord.org
 **/
 "use strict";
-//# sourceMappingURL=maps/index.ngdoc.js.map
